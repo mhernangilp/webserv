@@ -3,9 +3,6 @@
 #include <netinet/in.h>
 #include <iostream>
 
-#define SOCKET_ERR "error: cannot create socket"
-#define BIND_ERR "error: bind failed"
-
 int main(void)
 {
 	const int PORT = 8080;

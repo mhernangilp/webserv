@@ -9,12 +9,14 @@
 #include <vector>
 #include <cstdlib>
 #include <cerrno>
+#include "Client.hpp"
 
 class Server {
     private:
         const int PORT;
         int sockfd;
         std::vector<pollfd> poll_fds;
+        std::vector<Client> clients;
 
     public:
         Server();

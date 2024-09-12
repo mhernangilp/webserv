@@ -64,6 +64,8 @@ void Server::start() {
 					new_client_pollfd.fd = connection;
 					new_client_pollfd.events = POLLIN;
 					this->poll_fds.push_back(new_client_pollfd);
+                    Client new_client;
+                    this->clients.push_back(new_client);
 				} else { // Read data from the client
 					char buffer[1024] = {0};
 					int bytesRead = read(this->poll_fds[i].fd, buffer, 1024);
@@ -72,6 +74,7 @@ void Server::start() {
 						close(this->poll_fds[i].fd);
 						this->poll_fds.erase(this->poll_fds.begin() + i);
 						i--;
+                        this->clients.erase(this->clients.begin() + i);
 					} else {
                         std::cout << "Message received from client " << i << ": " << buffer << std::endl;
 
@@ -79,6 +82,7 @@ void Server::start() {
                         std::string response = "Hello! Welcome to webserv. This is a default response\n";
 						send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
                         std::cout << "Response sent!" << std::endl;
+                        
 					}
 				}
 			}

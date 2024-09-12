@@ -19,8 +19,6 @@ class Server {
     public:
         Server();
         Server(int PORT);
-        Server(const Server& original);
-        Server& operator=(const Server& original);
         ~Server();
 
         void    start();

@@ -4,13 +4,6 @@ Server::Server() : PORT(8080) {}
 
 Server::Server(int PORT) : PORT(PORT) {}
 
-Server::Server(const Server& original) : PORT(original.PORT) {}
-
-Server& Server::operator=(const Server& original) {
-    (void) original;
-    return *this;
-}
-
 Server::~Server() {}
 
 void Server::start() {

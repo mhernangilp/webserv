@@ -5,6 +5,17 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+std::string getContentType(const std::string& filePath) {
+    if (filePath.find(".html") != std::string::npos) return "text/html";
+    if (filePath.find(".css") != std::string::npos) return "text/css";
+    if (filePath.find(".js") != std::string::npos) return "application/javascript";
+    if (filePath.find(".png") != std::string::npos) return "image/png";
+    if (filePath.find(".jpg") != std::string::npos || filePath.find(".jpeg") != std::string::npos) return "image/jpeg";
+    if (filePath.find(".gif") != std::string::npos) return "image/gif";
+    if (filePath.find(".svg") != std::string::npos) return "image/svg+xml";
+    return "text/plain";  // Tipo de contenido por defecto
+}
+
 std::string getFileContent(const std::string& filePath) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
@@ -12,17 +23,17 @@ std::string getFileContent(const std::string& filePath) {
     }
 
     std::stringstream buffer;
-    buffer << file.rdbuf(); // Leer el archivo completo en el buffer
-    return buffer.str();    // Devolver el contenido del archivo como una cadena
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 void handleGetRequest(const std::string& url, int client_socket) {
     std::string filePath;
 
     if (url == "/") {
-        filePath = "public/index.html";  // Página principal
+        filePath = "docs/kebab_web/index.html";
     } else {
-        filePath = "public" + url;  // Intentar cargar cualquier otro archivo dentro de la carpeta "public"
+        filePath = "docs/kebab_web" + url;
     }
 
     // Leer el contenido del archivo solicitado
@@ -30,11 +41,10 @@ void handleGetRequest(const std::string& url, int client_socket) {
 
     if (fileContent.empty()) {
         // Si no se encuentra el archivo solicitado, cargar y devolver el archivo 404.html
-        std::string notFoundPagePath = "public/404.html";
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/404.html";
         std::string notFoundPageContent = getFileContent(notFoundPagePath);
 
         if (notFoundPageContent.empty()) {
-            // Si no se encuentra el archivo 404.html, devolver una respuesta genérica 404
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
@@ -43,7 +53,6 @@ void handleGetRequest(const std::string& url, int client_socket) {
                 "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
         } else {
-            // Si se encuentra 404.html, enviar su contenido como respuesta
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
@@ -53,11 +62,13 @@ void handleGetRequest(const std::string& url, int client_socket) {
         }
     } else {
         // Si se encuentra el archivo solicitado, devolver su contenido con un código 200 OK
-        std::string httpResponse = 
+       std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
+            "Content-Type: " + getContentType(filePath) + "\r\n"
             "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
             "\r\n" + fileContent;
-        send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
+        if (send(client_socket, httpResponse.c_str(), httpResponse.size(), 0) < 0) {
+            std::cerr << "Error al enviar la respuesta: " << strerror(errno) << std::endl;
+        }
     }
 }

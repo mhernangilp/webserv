@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebabis - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+
+        header {
+            background-color: #d35400;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        nav {
+            text-align: center;
+            background-color: #e67e22;
+            padding: 10px 0;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            background-image: url('assets/durum-hero.jpeg');
+            background-size: cover;
+            background-position: center;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+        }
+
+        .content {
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .about-text {
+            flex: 1;
+            padding: 20px;
+            text-align: left;
+        }
+
+        .about-image {
+            flex: 1;
+            text-align: center;
+        }
+
+        .about-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        h2 {
+            color: #e67e22;
+        }
+
+        footer {
+            background-color: #d35400;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kebabis</h1>
+        <p>The best kebabs in town</p>
+    </header>
+
+    <nav>
+        <a href="/index.html">Home</a>
+        <a href="/menu/menu.html">Menu</a>
+    </nav>
+
+    <section class="hero">
+        Delicious Kebabs!
+    </section>
+
+    <section class="content" id="about">
+        <div class="about-text">
+            <h2>About Us</h2>
+            <p style="font-size: 20px;">At Kebabis, we take immense pride in serving the best kebabs in town, a true gem for food lovers. For years, our passionate team has dedicated itself to perfecting the art of kebab-making, ensuring that each bite is a delightful experience. We source only the freshest ingredients, handpicking vibrant vegetables and high-quality meats to create our flavorful dishes.</p>
+            <p style="font-size: 20px;">Our sauces, crafted from traditional recipes passed down through generations, are the secret to our unique taste. Each sauce is made in-house, blending herbs and spices that elevate our kebabs to a level of culinary excellence.</p>
+            <p style="font-size: 20px;">When you dine with us, you’re not just enjoying a meal; you’re indulging in a tradition that celebrates the rich flavors and aromas of authentic kebab cuisine. Whether you're a kebab aficionado or trying them for the first time, Kebabis promises a memorable dining experience that will keep you coming back for more.</p>
+            <p style="font-size: 20px;">Join us and discover why Kebabis is not just a restaurant; it’s a cherished destination for those who appreciate the finer things in life.</p>
+
+        </div>
+        <div class="about-image">
+            <img src="assets/shop.jpeg" alt="About Kebabis">
+        </div>
+    </section>
+
+    <section class="content" id="contact">
+        <h2>Contact</h2>
+        <p>Address: Distrito Telefónica, Edificio Norte 3, 28050, Madrid</p>
+        <p>Phone: 123-456-789</p>
+        <p>Email: kebabish@42madrid.com</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Kebabis. All rights reserved.</p>
+    </footer>
+</body>
+</html>

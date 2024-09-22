@@ -10,10 +10,10 @@
 #include <cstdlib>
 #include <cerrno>
 #include "Client.hpp"
+#include "config/ServerConfig.hpp"
 
 class Server {
     private:
-        int PORT;
         int sockfd;
         std::vector<pollfd> poll_fds;
         std::vector<Client> clients;
@@ -22,8 +22,7 @@ class Server {
         Server();
         ~Server();
 
-        //void    setup();
-        void    start();
+        void    start(const ServerConfig& config);
 };
 
 #endif

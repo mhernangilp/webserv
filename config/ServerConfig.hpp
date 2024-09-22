@@ -1,8 +1,11 @@
+#ifndef SERVER_CONFIG_HPP
+#define SERVER_CONFIG_HPP
+
 #include "LocationConfig.hpp"
 
 class ServerConfig {
 public:
-    int listen;
+    int port;
     std::string host;
     std::string server_name;
     std::map<int, std::string> error_page;
@@ -16,3 +19,5 @@ public:
     void print() const;
     void addLocation(const std::string& path, const LocationConfig& location);
 };
+
+#endif

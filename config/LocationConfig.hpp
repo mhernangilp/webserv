@@ -1,3 +1,6 @@
+#ifndef LOCATION_CONFIG_HPP
+#define LOCATION_CONFIG_HPP
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,3 +21,5 @@ public:
 
     void print() const;
 };
+
+#endif

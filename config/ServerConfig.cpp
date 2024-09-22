@@ -1,6 +1,6 @@
 #include "ServerConfig.hpp"
 
-ServerConfig::ServerConfig() : listen(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
+ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
     error_page[404] = "custom_error/404.html";
     
     LocationConfig location = LocationConfig();
@@ -36,7 +36,7 @@ ServerConfig::ServerConfig() : listen(8001), host("127.0.0.1"), server_name("loc
 
 void ServerConfig::print() const {
     std::cout << "--Server Config:\n";
-    std::cout << "\tListen: " << listen << "\n";
+    std::cout << "\tport: " << port << "\n";
     std::cout << "\tHost: " << host << "\n";
     std::cout << "\tServer Name: " << server_name << "\n";
     std::cout << "\tError Page:\n";

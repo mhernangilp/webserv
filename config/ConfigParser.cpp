@@ -90,8 +90,8 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
 
     if (current_block == "server") {
         if (key == "listen") {
-            iss >> server.listen;
-            if (server.listen < 1 || server.listen > 65535) {
+            iss >> server.port;
+            if (server.port < 1 || server.port > 65535) {
                 std::cerr << RED << "[ERR] port value not valid ";
                 return 1;
             }

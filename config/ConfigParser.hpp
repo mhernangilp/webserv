@@ -16,6 +16,7 @@ class ConfigParser {
 
         int parseKey(const std::string& key, std::istringstream& iss);
         void trim(std::string& s);
+        bool isValidIP(const std::string& ip);
         
     public:
         int parseConfig(const std::string& filename);

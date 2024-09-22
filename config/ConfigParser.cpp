@@ -5,6 +5,7 @@ int ConfigParser::parseConfig(const std::string& filename) {
     std::string line;
     int brace_count = 0;
     bool finished = false;
+    bool passed_server = false;
 
     if (!config_file.is_open()) {
         std::cout << ORANGE << "[WARN] Cannot open config file, using default parameters" << RESET << std::endl;
@@ -32,6 +33,17 @@ int ConfigParser::parseConfig(const std::string& filename) {
             }
         }
 
+        int semicolon_count = 0;
+        for (size_t i = 0; i < line.size(); ++i) {
+            if (line[i] == ';') {
+                semicolon_count++;
+            }
+        }
+        if (semicolon_count > 1) {
+            std::cerr << RED << "[ERR] Too many semicolons in line: '" << line << "'" << RESET << std::endl;
+            return 1;
+        }
+
         if (brace_count == 0)
             finished = true;
 
@@ -39,8 +51,13 @@ int ConfigParser::parseConfig(const std::string& filename) {
         std::string key;
         iss >> key;
 
+        if (key != "server" && passed_server == false) {
+            std::cerr << RED << "[ERR] invalid basic config file sintax" << RESET << std::endl;
+            return 1;
+        }
         if (key == "server") {
             current_block = "server";
+            passed_server = true;
         } else if (key == "location") {
             std::string location_path;
             iss >> location_path;
@@ -74,11 +91,19 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
     if (current_block == "server") {
         if (key == "listen") {
             iss >> server.listen;
+            if (server.listen < 1 || server.listen > 65535) {
+                std::cerr << RED << "[ERR] port value not valid ";
+                return 1;
+            }
         } else if (key == "host") {
             std::string temp_host;
             iss >> temp_host;
             if (!temp_host.empty()) {
                 server.host = temp_host.substr(0, temp_host.size() - 1);
+            }
+            if (!isValidIP(server.host)) {
+                std::cerr << RED << "[ERR] Invalid IP address";
+                return 1;
             }
         } else if (key == "server_name") {
             std::string temp_server_name;
@@ -152,4 +177,19 @@ void ConfigParser::trim(std::string& s) {
 
 ServerConfig ConfigParser::getServerConfig() const {
     return server;
+}
+
+bool ConfigParser::isValidIP(const std::string& ip) {
+    std::istringstream iss(ip);
+    std::string octet;
+    int count = 0;
+
+    while (std::getline(iss, octet, '.')) {
+        int num;
+        if (!(std::istringstream(octet) >> num) || num < 0 || num > 255) {
+            return false;
+        }
+        count++;
+    }
+    return count == 4;
 }

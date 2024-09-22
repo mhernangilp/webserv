@@ -20,7 +20,7 @@ RED = \033[1;31m
 #      FILES        #
 #####################
 
-SRCS = webserv.cpp Server.cpp Client.cpp
+SRCS = webserv.cpp Server.cpp Client.cpp config/ConfigParser.cpp config/LocationConfig.cpp config/ServerConfig.cpp
 
 #####################
 #	RULES       #

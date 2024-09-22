@@ -86,10 +86,12 @@ void Server::start() {
 						std::cout << clients[0].getRequest().getUrl() << std::endl;
 						std::cout << clients[0].getRequest().getHttpVersion() << std::endl;
 						std::cout << clients[0].getRequest().getHost() << std::endl;
-						//std::cout << clients[0].getRequest().getHeaders() << std::endl;
+						std::cout << clients[0].getRequest().getHeaders()["User-Agent"] << std::endl;
 						std::cout << clients[0].getRequest().getBody() << std::endl;
 						std::cout << "----------------------------------------------" << std::endl;
 						
+
+						handleGetRequest(clients[i - 1].getRequest().getUrl(), this->poll_fds[i].fd);
 
 
 						// Send a response to the client

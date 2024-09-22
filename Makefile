@@ -20,7 +20,7 @@ RED = \033[1;31m
 #      FILES        #
 #####################
 
-SRCS = webserv.cpp Server.cpp Client.cpp Request.cpp
+SRCS = webserv.cpp Server.cpp Client.cpp Request.cpp Response.cpp
 
 #####################
 #	RULES       #

@@ -26,4 +26,6 @@ class Server {
         void    start();
 };
 
+void handleGetRequest(const std::string& url, int client_socket);
+
 #endif

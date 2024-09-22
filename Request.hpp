@@ -17,9 +17,8 @@ class Request {
 
     public:
     Request();
-        Request(const std::string& raw_request);   // Constructor que parsea la solicitud
+        Request(const std::string& raw_request);
 
-        // Getters para acceder a los atributos privados
         std::string getMethod() const;
         std::string getUrl() const;
         std::string getHttpVersion() const;
@@ -28,7 +27,6 @@ class Request {
         std::string getBody() const;
 
     private:
-        // Función interna que se encarga de parsear la solicitud HTTP
         void parseRequest(const std::string& raw_request);
 };
 

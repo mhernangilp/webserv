@@ -10,7 +10,6 @@ void Request::parseRequest(const std::string& raw_request) {
     std::istringstream stream(raw_request);
     std::string line;
 
-    // Leer la primera línea que contiene el método, la URL y la versión HTTP
     std::getline(stream, line);
     std::istringstream request_line(line);
 
@@ -35,9 +34,8 @@ void Request::parseRequest(const std::string& raw_request) {
     // Si hay un cuerpo en la solicitud (por ejemplo, en un POST), lo capturamos
     if (method == "POST" || method == "PUT") {
         std::getline(stream, line);
-        body = line; // Capturar el cuerpo de la solicitud
+        body = line;
     }
-    //std::cout << "ESTO ES EL USEARR HEADER" << headers["User-Agent"] << std::endl;
 }
 
 

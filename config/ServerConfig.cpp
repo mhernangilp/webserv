@@ -1,7 +1,7 @@
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig() : listen(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
-    //error_page = "404";
+    error_page[404] = "custom_error/404.html";
     
     LocationConfig location = LocationConfig();
     location.location = "/";

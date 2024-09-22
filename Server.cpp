@@ -1,8 +1,6 @@
 #include "Server.hpp"
 
-Server::Server() : PORT(8080) {}
-
-Server::Server(int PORT) : PORT(PORT) {}
+Server::Server() {}
 
 Server::~Server() {}
 

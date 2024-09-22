@@ -13,16 +13,16 @@
 
 class Server {
     private:
-        const int PORT;
+        int PORT;
         int sockfd;
         std::vector<pollfd> poll_fds;
         std::vector<Client> clients;
 
     public:
         Server();
-        Server(int PORT);
         ~Server();
 
+        //void    setup();
         void    start();
 };
 

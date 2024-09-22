@@ -7,8 +7,8 @@ public:
     std::string server_name;
     std::string error_page;
     int client_max_body_size;
-    std::string root;
     std::string index;
+    std::string root;
     std::map<std::string, LocationConfig> locations;
 
     ServerConfig();

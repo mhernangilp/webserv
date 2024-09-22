@@ -3,22 +3,37 @@
 int ConfigParser::parseConfig(const std::string& filename) {
     std::ifstream config_file(filename.c_str());
     std::string line;
+    int brace_count = 0;
+    bool finished = false;
 
     if (!config_file.is_open()) {
-        std::cout << ORANGE << "Cannot open config file, using default one ..." << RESET << std::endl;
-        std::string default_conf = "config/default.conf";
-        config_file.open(default_conf.c_str());
-        if (!config_file.is_open()) {
-            std::cerr << RED <<"Error: cannot open default config file" << RESET <<std::endl;
-            return 1;
-        }
+        std::cout << ORANGE << "[WARN] Cannot open config file, using default parameters" << RESET << std::endl;
     }
 
     while (std::getline(config_file, line)) {
-        // Eliminar comentarios y espacios en blanco
         line = line.substr(0, line.find("#"));
         trim(line);
         if (line.empty()) continue;
+        if (!line.empty() && finished) {
+            std::cerr << RED << "[ERR] characters out of server scope" << RESET << std::endl;
+            return 1;
+        }
+
+        if (line[line.size() - 1] != ';' && line[line.size() - 1] != '{' && line[line.size() - 1] != '}') {
+            std::cerr << RED << "[ERR] Missing semicolon in line: '" << line << "'" << RESET << std::endl;
+            return 1;
+        }
+
+        for (size_t i = 0; i < line.size(); ++i) {
+            if (line[i] == '{') {
+                brace_count++;
+            } else if (line[i] == '}') {
+                brace_count--;
+            }
+        }
+
+        if (brace_count == 0)
+            finished = true;
 
         std::istringstream iss(line);
         std::string key;
@@ -30,60 +45,103 @@ int ConfigParser::parseConfig(const std::string& filename) {
             std::string location_path;
             iss >> location_path;
             current_block = "location";
-            current_location = LocationConfig(); // Reiniciar localización
+            current_location = LocationConfig();
+            current_location.location = location_path;
         } else if (key == "}") {
             if (current_block == "location") {
-                server.addLocation(current_location.root, current_location);
-                current_block = "server"; // Volver al bloque del servidor
+                server.addLocation(current_location.location, current_location);
+                current_block = "server";
             }
         } else {
-            parseKey(key, iss);
+            if (parseKey(key, iss) == 1) {
+                std::cerr << "in line '" << line << "'" << RESET << std::endl;
+                return 1;
+            }
         }
     }
+
+    if (brace_count != 0) {
+        std::cerr << RED << "[ERR] Unmatched braces in configuration file." << RESET << std::endl;
+        return 1;
+    }
+
     return 0;
 }
 
-void ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
+int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
     std::string value;
 
     if (current_block == "server") {
         if (key == "listen") {
             iss >> server.listen;
         } else if (key == "host") {
-            iss >> server.host;
+            std::string temp_host;
+            iss >> temp_host;
+            if (!temp_host.empty()) {
+                server.host = temp_host.substr(0, temp_host.size() - 1);
+            }
         } else if (key == "server_name") {
-            iss >> server.server_name;
+            std::string temp_server_name;
+            iss >> temp_server_name;
+            if (!temp_server_name.empty()) {
+                server.server_name = temp_server_name.substr(0, temp_server_name.size() - 1);
+            }
         } else if (key == "error_page") {
             iss >> server.error_page;
         } else if (key == "client_max_body_size") {
             iss >> server.client_max_body_size;
         } else if (key == "root") {
-            iss >> server.root;
+            std::string temp_root;
+            iss >> temp_root;
+            if (!temp_root.empty()) {
+                server.root = temp_root.substr(0, temp_root.size() - 1);
+            }
         } else if (key == "index") {
-            iss >> server.index;
+            std::string temp_index;
+            iss >> temp_index;
+            if (!temp_index.empty()) {
+                server.index = temp_index.substr(0, temp_index.size() - 1);
+            }
         }
     } else if (current_block == "location") {
         if (key == "root") {
             iss >> current_location.root;
         } else if (key == "autoindex") {
-            iss >> current_location.autoindex;
+            std::string autoindex;
+            iss >> autoindex;
+            if (autoindex == "on;")
+                current_location.autoindex = true;
+            else if (autoindex == "off;")
+                current_location.autoindex = false;
+            else {
+                std::cerr << RED << "[ERR] autoindex value not valid ";
+                return 1;
+            }
         } else if (key == "allow_methods") {
             std::string method;
             while (iss >> method) {
+                if (method[method.size() - 1] == ';')
+                    method = method.substr(0, method.size() - 1);
                 current_location.allow_methods.push_back(method);
             }
         } else if (key == "index") {
-            iss >> current_location.index;
+            std::string temp_index;
+            iss >> temp_index;
+            if (!temp_index.empty()) {
+                current_location.index = temp_index.substr(0, temp_index.size() - 1);
+            }
         } else if (key == "return") {
-            iss >> current_location.return_path;
-        } else if (key == "alias") {
-            iss >> current_location.alias;
+            std::string temp_return_path;
+            iss >> temp_return_path;
+            if (!temp_return_path.empty()) {
+                current_location.return_path = temp_return_path.substr(0, temp_return_path.size() - 1);
+            }
         }
     }
+    return 0;
 }
 
 void ConfigParser::trim(std::string& s) {
-    // Elimina espacios en blanco a los lados
     size_t start = s.find_first_not_of(" \t\n\r");
     if (start != std::string::npos)
         s = s.substr(start);

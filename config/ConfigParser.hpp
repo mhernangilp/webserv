@@ -9,16 +9,15 @@
 
 
 class ConfigParser {
-private:
-    ServerConfig server;
-    LocationConfig current_location;
-    std::string current_block;
+    private:
+        ServerConfig server;
+        LocationConfig current_location;
+        std::string current_block;
 
-public:
-    int parseConfig(const std::string& filename);
-
-    void parseKey(const std::string& key, std::istringstream& iss);
-
-    void trim(std::string& s);
-    ServerConfig getServerConfig() const;
+        int parseKey(const std::string& key, std::istringstream& iss);
+        void trim(std::string& s);
+        
+    public:
+        int parseConfig(const std::string& filename);
+        ServerConfig getServerConfig() const;
 };

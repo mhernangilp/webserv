@@ -5,7 +5,7 @@ public:
     int listen;
     std::string host;
     std::string server_name;
-    std::string error_page;
+    std::map<int, std::string> error_page;
     int client_max_body_size;
     std::string index;
     std::string root;

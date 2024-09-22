@@ -112,7 +112,15 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 server.server_name = temp_server_name.substr(0, temp_server_name.size() - 1);
             }
         } else if (key == "error_page") {
-            iss >> server.error_page;
+            int error_type;
+            std::string error_path;
+            iss >> error_type;
+            iss >> error_path;
+            if (error_type < 400 || error_type > 599) {
+                std::cerr << RED << "[ERR] error type not valid";
+                return 1;
+            }
+            server.error_page[error_type] = error_path.substr(0, error_path.size() - 1);
         } else if (key == "client_max_body_size") {
             iss >> server.client_max_body_size;
         } else if (key == "root") {

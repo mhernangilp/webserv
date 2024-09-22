@@ -1,7 +1,7 @@
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig() : listen(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
-    error_page = "404";
+    //error_page = "404";
     
     LocationConfig location = LocationConfig();
     location.location = "/";
@@ -39,7 +39,10 @@ void ServerConfig::print() const {
     std::cout << "\tListen: " << listen << "\n";
     std::cout << "\tHost: " << host << "\n";
     std::cout << "\tServer Name: " << server_name << "\n";
-    std::cout << "\tError Page: " << error_page << "\n";
+    std::cout << "\tError Page:\n";
+    for (std::map<int, std::string>::const_iterator it = error_page.begin(); it != error_page.end(); ++it) {
+        std::cout << "\t\tError type: " << it->first << ", error path: " << it->second << std::endl;
+    }
     std::cout << "\tMax Body Size: " << client_max_body_size << " bytes\n";
     std::cout << "\tRoot: " << root << "\n";
     std::cout << "\tIndex: " << index << "\n";

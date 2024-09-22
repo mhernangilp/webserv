@@ -1,6 +1,6 @@
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig() {}
+LocationConfig::LocationConfig() : autoindex(false) {}
 
 void LocationConfig::print() const {
     std::cout << "\tRoot: " << root << "\n";

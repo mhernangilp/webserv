@@ -2,8 +2,36 @@
 
 ServerConfig::ServerConfig() : listen(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
     error_page = "404";
-    //LocationConfig location = LocationConfig();
-    //location.autoindex = false;
+    
+    LocationConfig location = LocationConfig();
+    location.location = "/";
+    location.autoindex = false;
+    location.allow_methods.push_back("DELETE");
+    location.allow_methods.push_back("POST");
+    location.allow_methods.push_back("GET");
+    this->addLocation(location.location, location);
+    
+    location = LocationConfig();
+    location.location = "/kebabs";
+    location.autoindex = true;
+    location.allow_methods.push_back("GET");
+    location.allow_methods.push_back("POST");
+    location.index = "kebab.html";
+    this->addLocation(location.location, location);
+
+    location = LocationConfig();
+    location.location = "/secret-sauce";
+    location.return_path = "/kebabs";
+    this->addLocation(location.location, location);
+
+    location = LocationConfig();
+    location.location = "/cgi-bin";
+    location.root = "./";
+    location.allow_methods.push_back("GET");
+    location.allow_methods.push_back("POST");
+    location.allow_methods.push_back("DELETE");
+    location.index = "time.py";
+    this->addLocation(location.location, location);
 }
 
 void ServerConfig::print() const {

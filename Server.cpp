@@ -1,12 +1,13 @@
 #include "Server.hpp"
+#include <cstring>
+#include <netdb.h>
+#include <arpa/inet.h>
 
-Server::Server() : PORT(8080) {}
-
-Server::Server(int PORT) : PORT(PORT) {}
+Server::Server() {}
 
 Server::~Server() {}
 
-void Server::start() {
+void Server::start(const ServerConfig& config) {
 
     // Create the socket
     if ((this->sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -16,14 +17,25 @@ void Server::start() {
 
     // Configuration to assign the port to the socket
     sockaddr_in sockaddr;
+    memset(&sockaddr, 0, sizeof(sockaddr));
     int addrlen = sizeof(sockaddr);
-	sockaddr.sin_family = AF_INET;
-	sockaddr.sin_addr.s_addr = INADDR_ANY;
-	sockaddr.sin_port = htons(this->PORT);
+    sockaddr.sin_family = AF_INET;
+    
+    // Configurar la dirección IP
+    if (inet_pton(AF_INET, config.host.c_str(), &sockaddr.sin_addr) <= 0) {
+        // Si la conversión a IP falla, intentar como un nombre de host
+        struct hostent* he = gethostbyname(config.host.c_str());
+        if (he == NULL) {
+            std::cerr << "Invalid host: " << config.host << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        sockaddr.sin_addr = *(struct in_addr*)he->h_addr_list[0];
+    }
+	sockaddr.sin_port = htons(config.port);
 
     // Bind the port to the socket
 	if (bind(this->sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
-		std::cout << "Failed to bind to port " << this->PORT << ". errno: " << errno << std::endl;
+		std::cout << "Failed to bind to port " << config.port << ". errno: " << errno << std::endl;
     	exit(EXIT_FAILURE);
 	}
 

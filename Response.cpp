@@ -17,7 +17,7 @@ std::string getContentType(const std::string& filePath) {
 }
 
 std::string getFileContent(const std::string& filePath) {
-    std::ifstream file(filePath);
+    std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         return "";
     }
@@ -49,6 +49,7 @@ void handleGetRequest(const std::string& url, int client_socket) {
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
                 "Content-Length: 100\r\n"
+                "Connection: close\r\n"
                 "\r\n"
                 "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -57,18 +58,18 @@ void handleGetRequest(const std::string& url, int client_socket) {
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
                 "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
         }
     } else {
         // Si se encuentra el archivo solicitado, devolver su contenido con un código 200 OK
-       std::string httpResponse =
+        std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: " + getContentType(filePath) + "\r\n"
             "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
+            "Connection: keep-alive\r\n"
             "\r\n" + fileContent;
-        if (send(client_socket, httpResponse.c_str(), httpResponse.size(), 0) < 0) {
-            std::cerr << "Error al enviar la respuesta: " << strerror(errno) << std::endl;
-        }
+        send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
     }
 }

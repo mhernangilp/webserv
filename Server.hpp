@@ -10,20 +10,19 @@
 #include <cstdlib>
 #include <cerrno>
 #include "Client.hpp"
+#include "config/ServerConfig.hpp"
 
 class Server {
     private:
-        const int PORT;
         int sockfd;
         std::vector<pollfd> poll_fds;
         std::vector<Client> clients;
 
     public:
         Server();
-        Server(int PORT);
         ~Server();
 
-        void    start();
+        void    start(const ServerConfig& config);
 };
 
 #endif

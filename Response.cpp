@@ -26,7 +26,6 @@ std::string getFileContent(const std::string& filePath) {
     buffer << file.rdbuf();
     return buffer.str();
 }
-
 void handleGetRequest(const std::string& url, int client_socket) {
     std::string filePath;
 
@@ -36,7 +35,6 @@ void handleGetRequest(const std::string& url, int client_socket) {
         filePath = "docs/kebab_web" + url;
     }
 
-    // Leer el contenido del archivo solicitado
     std::string fileContent = getFileContent(filePath);
 
     if (fileContent.empty()) {
@@ -48,7 +46,7 @@ void handleGetRequest(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: 100\r\n"
+                "Content-Length: 80\r\n"
                 "Connection: close\r\n"
                 "\r\n"
                 "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
@@ -57,7 +55,7 @@ void handleGetRequest(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + std::to_string(notFoundPageContent.size() + 54) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -67,8 +65,8 @@ void handleGetRequest(const std::string& url, int client_socket) {
         std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: " + getContentType(filePath) + "\r\n"
-            "Content-Length: " + std::to_string(fileContent.size()) + "\r\n"
-            "Connection: keep-alive\r\n"
+            "Content-Length: " + std::to_string(fileContent.size() + 54) + "\r\n"
+            "Connection: close\r\n"
             "\r\n" + fileContent;
         send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
     }

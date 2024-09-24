@@ -102,13 +102,13 @@ void Server::start(const ServerConfig& config) {
 						std::cout << clients[0].getRequest().getBody() << std::endl;
 						std::cout << "----------------------------------------------" << std::endl;
 						
-
-						handleGetRequest(clients[i - 1].getRequest().getUrl(), this->poll_fds[i].fd);
+						if (clients[i - 1].getRequest().getMethod() == "GET")
+							handleGetRequest(clients[i - 1].getRequest().getUrl(), this->poll_fds[i].fd);
 
 
 						// Send a response to the client
-                        std::string response = "Hello! Welcome to webserv. This is a default response\n";
-						send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
+                        //std::string response = "Hello! Welcome to webserv. This is a default response\n";
+						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
                         std::cout << "Response sent!" << std::endl;
 
 					}

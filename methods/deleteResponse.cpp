@@ -22,7 +22,6 @@ void deleteResponse(const std::string& url, int client_socket) {
     }
 
     if (access(resourcePath.c_str(), F_OK) != -1) {
-        // Intentar eliminar el archivo o directorio
         if (remove(resourcePath.c_str()) == 0) {
             std::string response = "HTTP/1.1 204 No Content\r\n\r\n";
             send(client_socket, response.c_str(), response.size(), 0);

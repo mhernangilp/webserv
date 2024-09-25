@@ -2,7 +2,7 @@
 #define CLIENT_HPP
 
 #include <iostream>
-#include "Request.hpp"
+#include "methods/Request.hpp"
 
 class Request;
 

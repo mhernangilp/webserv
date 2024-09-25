@@ -1,9 +1,4 @@
-#include <fstream> 
-#include <sstream>
-#include <string> 
-#include <iostream> 
-#include <sys/socket.h>
-#include <unistd.h>
+#include "Request.hpp"
 
 std::string getContentType(const std::string& filePath) {
     if (filePath.find(".html") != std::string::npos) return "text/html";
@@ -24,9 +19,11 @@ std::string getFileContent(const std::string& filePath) {
 
     std::stringstream buffer;
     buffer << file.rdbuf();
+    file.close();
     return buffer.str();
 }
-void handleGetRequest(const std::string& url, int client_socket) {
+
+void getResponse(const std::string& url, int client_socket) {
     std::string filePath;
 
     if (url == "/") {

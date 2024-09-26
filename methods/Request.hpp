@@ -1,10 +1,13 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
-#include <string>
-#include <map>
+#include <fstream> 
 #include <sstream>
-#include <iostream>
+#include <string> 
+#include <iostream> 
+#include <sys/socket.h>
+#include <unistd.h>
+#include <map>
 
 class Request {
     private:
@@ -29,5 +32,8 @@ class Request {
     private:
         void parseRequest(const std::string& raw_request);
 };
+
+void getResponse(const std::string& url, int client_socket);
+void deleteResponse(const std::string& url, int client_socket);
 
 #endif

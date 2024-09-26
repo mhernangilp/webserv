@@ -93,22 +93,11 @@ void Server::start(const ServerConfig& config) {
 						clients[i - 1].setRequest(request);
                         std::cout << "Message received from client " << i << ": " << buffer << std::endl;
 
-						std::cout << "----------------------------------------------" << std::endl;
-						std::cout << clients[0].getRequest().getMethod() << std::endl;
-						std::cout << clients[0].getRequest().getUrl() << std::endl;
-						std::cout << clients[0].getRequest().getHttpVersion() << std::endl;
-						std::cout << clients[0].getRequest().getHost() << std::endl;
-						std::cout << clients[0].getRequest().getHeaders()["User-Agent"] << std::endl;
-						std::cout << clients[0].getRequest().getBody() << std::endl;
-						std::cout << "----------------------------------------------" << std::endl;
-						
-
-						handleGetRequest(clients[i - 1].getRequest().getUrl(), this->poll_fds[i].fd);
-
+						method(clients[i - 1].getRequest(), this->poll_fds[i].fd);
 
 						// Send a response to the client
-                        std::string response = "Hello! Welcome to webserv. This is a default response\n";
-						send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
+                        //std::string response = "Hello! Welcome to webserv. This is a default response\n";
+						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
                         std::cout << "Response sent!" << std::endl;
 
 					}

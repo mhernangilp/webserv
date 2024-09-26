@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebabis - Upload & Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+
+        header {
+            background-color: #d35400;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        nav {
+            text-align: center;
+            background-color: #e67e22;
+            padding: 10px 0;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .content {
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .form-section {
+            width: 45%;
+            margin: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        h2 {
+            color: #e67e22;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 18px;
+            margin: 10px 0 5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="file"] {
+            padding: 10px;
+            width: 80%;
+            font-size: 16px;
+            margin: 10px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            background-color: #d35400;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #e67e22;
+        }
+
+        footer {
+            background-color: #d35400;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Kebabis</h1>
+        <p>Upload Files & Register</p>
+    </header>
+
+    <nav>
+        <a href="../index.html">Home</a>
+        <a href="../menu/menu.html">Menu</a>
+        <a href="upload.html">Upload</a>
+    </nav>
+
+    <section class="content">
+        <!-- File Upload Form -->
+        <div class="form-section">
+            <h2>Upload a File</h2>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <label for="file">Choose a file to upload:</label>
+                <input type="file" id="file" name="file" required>
+                <input type="submit" value="Upload File">
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Kebabis. All rights reserved.</p>
+    </footer>
+</body>
+</html>

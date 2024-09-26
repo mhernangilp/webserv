@@ -12,6 +12,12 @@ std::string FileContent(const std::string& filePath) {
     return buffer.str();
 }
 
+std::string convertoString(int number) {
+    std::stringstream ss;
+    ss << number;
+    return ss.str();
+}
+
 void deleteResponse(const std::string& url, int client_socket) {
     std::string resourcePath; //= "docs/kebab_web/up_to_you" + url;
 
@@ -42,7 +48,7 @@ void deleteResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 500 Internal Server Error\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + std::to_string(notFoundPageContent.size() + 54) + "\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);

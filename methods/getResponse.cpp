@@ -12,7 +12,7 @@ std::string getContentType(const std::string& filePath) {
 }
 
 std::string getFileContent(const std::string& filePath) {
-    std::ifstream file(filePath, std::ios::binary);
+    std::ifstream file(filePath.c_str());
     if (!file.is_open()) {
         return "";
     }
@@ -21,6 +21,12 @@ std::string getFileContent(const std::string& filePath) {
     buffer << file.rdbuf();
     file.close();
     return buffer.str();
+}
+
+std::string toString(int number) {
+    std::stringstream ss;
+    ss << number;
+    return ss.str();
 }
 
 void getResponse(const std::string& url, int client_socket) {
@@ -52,7 +58,7 @@ void getResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + std::to_string(notFoundPageContent.size() + 54) + "\r\n"
+                "Content-Length: " + toString(notFoundPageContent.size() + 54) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -62,7 +68,7 @@ void getResponse(const std::string& url, int client_socket) {
         std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: " + getContentType(filePath) + "\r\n"
-            "Content-Length: " + std::to_string(fileContent.size() + 54) + "\r\n"
+            "Content-Length: " + toString(fileContent.size() + 54) + "\r\n"
             "Connection: close\r\n"
             "\r\n" + fileContent;
         send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);

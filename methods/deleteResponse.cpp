@@ -2,7 +2,6 @@
 #include <dirent.h>
 #include <sys/stat.h> // Para verificar si es un directorio
 #include <unistd.h>   // Para usar remove
-#include <iostream>
 
 std::string FileContent(const std::string& filePath) {
     std::ifstream file(filePath.c_str(), std::ios::binary);
@@ -28,7 +27,7 @@ bool isDirectory(const std::string& path) {
     return S_ISDIR(pathStat.st_mode);
 }
 
-void checkdir(const std::string& url, int client_socket) {
+int checkdir(const std::string& url, int client_socket) {
     DIR* dir = opendir(url.c_str());
     if (dir != NULL) {
         struct dirent* entry;
@@ -53,16 +52,41 @@ void checkdir(const std::string& url, int client_socket) {
         closedir(dir);
         if (rmdir(url.c_str()) != 0) {
             std::cerr << "Error eliminando el directorio: " << url << std::endl;
+            return (1);
         }
     }
+    return (0);
 }
 
 void try_delete(std::string resourcePath, int client_socket) {
     if (isDirectory(resourcePath)) {
-        checkdir(resourcePath, client_socket);
-        std::string response = "HTTP/1.1 204 No Content\r\n\r\n";
-        send(client_socket, response.c_str(), response.size(), 0);
-    } else if (remove(resourcePath.c_str()) == 0) {
+        if (!checkdir(resourcePath, client_socket)){
+            std::string response = "HTTP/1.1 204 No Content\r\n\r\n";
+            send(client_socket, response.c_str(), response.size(), 0);
+        }else {
+            std::string notFoundPagePath = "docs/kebab_web/error_pages/403.html";
+            std::string notFoundPageContent = FileContent(notFoundPagePath);
+            if (notFoundPageContent.empty()) {
+                std::string notFoundPageContent = "<html><body><h1>403 Forbidden</h1><p>You don't have permission to access this resource.</p></body></html>";
+                std::string notFoundResponse = 
+                     "HTTP/1.1 403 Forbidden\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                    "Connection: close\r\n"
+                    "\r\n" +
+                    notFoundPageContent;
+                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+            } else {
+                std::string notFoundResponse = 
+                "HTTP/1.1 403 Forbidden\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
+                "Connection: close\r\n"
+                "\r\n" + notFoundPageContent;
+                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+            }
+        } 
+    }else if (remove(resourcePath.c_str()) == 0) {
         std::string response = "HTTP/1.1 204 No Content\r\n\r\n";
         send(client_socket, response.c_str(), response.size(), 0);
     } else {
@@ -100,13 +124,27 @@ void deleteResponse(const std::string& url, int client_socket) {
     if (access(resourcePath.c_str(), F_OK) != -1) {
        try_delete(resourcePath, client_socket);
     } else {
-        std::string notFoundResponse = 
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: 80\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
-        send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/404.html";
+        std::string notFoundPageContent = FileContent(notFoundPagePath);
+
+        if (notFoundPageContent.empty()) {
+            std::string notFoundPageContent = "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
+            std::string notFoundResponse = 
+                "HTTP/1.1 404 Not Found\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                "Connection: close\r\n"
+                "\r\n" +
+                notFoundPageContent;
+            send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+        } else {
+            std::string notFoundResponse = 
+                "HTTP/1.1 404 Not Found\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
+                "Connection: close\r\n"
+                "\r\n" + notFoundPageContent;
+            send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+        }
     }
 }

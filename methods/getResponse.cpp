@@ -46,13 +46,14 @@ void getResponse(const std::string& url, int client_socket) {
         std::string notFoundPageContent = getFileContent(notFoundPagePath);
 
         if (notFoundPageContent.empty()) {
+            std::string notFoundPageContent = "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: 80\r\n"
+                "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
-                "\r\n"
-                "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
+                "\r\n" +
+                notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
         } else {
             std::string notFoundResponse = 

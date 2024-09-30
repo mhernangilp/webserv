@@ -8,6 +8,8 @@ Server::Server() {}
 Server::~Server() {}
 
 void Server::start(const ServerConfig& config) {
+	const char spinner[] = {'/', '-', '\\', '|'};
+	int j = 0;
 
     // Create the socket
     if ((this->sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -52,8 +54,16 @@ void Server::start(const ServerConfig& config) {
 	this->poll_fds.push_back(main_socket_pollfd);
 
 
-	bool running = true;
     while (1) {
+
+		if (j++ >= 400000)
+			j = 0;
+		std::cout << "\rWating for activity [" << spinner[j / 100000] << "]" << std::flush;
+
+		/*if (j++ >= 1000000)
+			j = 0;
+		if (j == 0 || j == 250000 || j == 500000 || j == 750000)
+			std::cout << "\rWating for activity [" << spinner[j / 250000] << "]" << std::flush;*/
 
 		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
 		if (poll_count < 0) {
@@ -71,7 +81,6 @@ void Server::start(const ServerConfig& config) {
 					}
 
 					std::cout << "New connection accepted! Set identifier " << this->poll_fds.size() << std::endl;
-					running = true;
 
 					// Add the new client socket to poll
 					pollfd new_client_pollfd;
@@ -101,12 +110,6 @@ void Server::start(const ServerConfig& config) {
                         //std::string response = "Hello! Welcome to webserv. This is a default response\n";
 						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
                         std::cout << "Response sent!" << std::endl;
-
-						if (running){
-							std::cout << "\n+++++++ Waiting for activity ++++++++\n" << std::endl;
-							running = false;
-						}
-
 					}
 				}
 			}

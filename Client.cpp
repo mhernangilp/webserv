@@ -1,8 +1,8 @@
 #include "Client.hpp"
 
-Client::Client() { std::cout << "Se crea cliente" << std::endl;}
+Client::Client() {}
 
-Client::~Client() { std::cout << "Se elimina cliente" << std::endl;}
+Client::~Client() {}
 
 Request Client::getRequest() const {
     return request;

@@ -11,9 +11,11 @@ void Server::start(const ServerConfig& config) {
 	const char spinner[] = {'/', '-', '\\', '|'};
 	int j = 0;
 
+	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
+
     // Create the socket
     if ((this->sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		std::cout << "Failed to create socket. errno: " << errno << std::endl;
+		std::cerr << RED << "Error. Failed to create socket" << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
 
@@ -28,7 +30,7 @@ void Server::start(const ServerConfig& config) {
         // Si la conversión a IP falla, intentar como un nombre de host
         struct hostent* he = gethostbyname(config.host.c_str());
         if (he == NULL) {
-            std::cerr << "Invalid host: " << config.host << std::endl;
+            std::cerr << RED << "Error. Invalid host: " << config.host << RESET << std::endl;
             exit(EXIT_FAILURE);
         }
         sockaddr.sin_addr = *(struct in_addr*)he->h_addr_list[0];
@@ -37,13 +39,13 @@ void Server::start(const ServerConfig& config) {
 
     // Bind the port to the socket
 	if (bind(this->sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
-		std::cout << "Failed to bind to port " << config.port << ". errno: " << errno << std::endl;
+		std::cerr << RED << "Error. Failed to bind to port " << config.port << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
 
     // Set the socket in listening mode
 	if (listen(this->sockfd, 3) < 0) {
-		std::cout << "Failed to listen on socket. errno: " << errno << std::endl;
+		std::cerr << RED << "Error. Failed to listen on socket" << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
 
@@ -53,21 +55,17 @@ void Server::start(const ServerConfig& config) {
 	main_socket_pollfd.events = POLLIN;
 	this->poll_fds.push_back(main_socket_pollfd);
 
+	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
     while (1) {
 
 		if (j++ >= 400000)
 			j = 0;
-		std::cout << "\rWating for activity [" << spinner[j / 100000] << "]" << std::flush;
-
-		/*if (j++ >= 1000000)
-			j = 0;
-		if (j == 0 || j == 250000 || j == 500000 || j == 750000)
-			std::cout << "\rWating for activity [" << spinner[j / 250000] << "]" << std::flush;*/
+		std::cout << PURPLE <<"\r[INFO] Wating For Activity [" << spinner[j / 100000] << "]" << std::flush << RESET;
 
 		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
 		if (poll_count < 0) {
-			std::cout << "Poll failed. errno: " << errno << std::endl;
+			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
 		}
 
@@ -76,11 +74,11 @@ void Server::start(const ServerConfig& config) {
 				if (this->poll_fds[i].fd == this->sockfd) { // New incoming connection
 					int connection = accept(this->sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
 					if (connection < 0) {
-						std::cout << "Failed to grab connection. errno: " << errno << std::endl;
+						std::cerr << "[ERR] Failed to grab connection" << std::endl;
 						exit(EXIT_FAILURE);
 					}
 
-					std::cout << "New connection accepted! Set identifier " << this->poll_fds.size() << std::endl;
+					std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << this->poll_fds.size() << RESET << std::endl;
 
 					// Add the new client socket to poll
 					pollfd new_client_pollfd;
@@ -93,7 +91,7 @@ void Server::start(const ServerConfig& config) {
 					char buffer[1024] = {0};
 					int bytesRead = read(this->poll_fds[i].fd, buffer, 1024);
 					if (bytesRead <= 0) { // If there is no data or the connection is closed
-						std::cout << "Client disconnected" << std::endl;
+						std::cout << LIGHT_BLUE <<"[INFO] Client " << i << " Disconnected, Closing Connection ..." << RESET << std::endl;
 						close(this->poll_fds[i].fd);
 						this->poll_fds.erase(this->poll_fds.begin() + i);
                         this->clients.erase(this->clients.begin() + (i - 1));
@@ -102,17 +100,22 @@ void Server::start(const ServerConfig& config) {
 						std::string raw_request(buffer, bytesRead);
                         Request request(raw_request);
 						clients[i - 1].setRequest(request);
-                        std::cout << "Message received from client " << i << ": " << buffer << std::endl;
+                        std::cout << BLUE <<"\n[INFO] Message received from client " << i << RESET << std::endl;
 
 						method(clients[i - 1].getRequest(), this->poll_fds[i].fd);
 
 						// Send a response to the client
                         //std::string response = "Hello! Welcome to webserv. This is a default response\n";
 						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
-                        std::cout << "Response sent!" << std::endl;
+                        std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
 					}
 				}
 			}
 		}
 	}
+}
+
+void    Server::setConfig(ServerConfig& config)
+{
+	this->config = config;
 }

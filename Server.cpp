@@ -51,8 +51,9 @@ void Server::start(const ServerConfig& config) {
 	main_socket_pollfd.events = POLLIN;
 	this->poll_fds.push_back(main_socket_pollfd);
 
+
+	bool running = true;
     while (1) {
-		std::cout << "\n+++++++ Waiting for activity ++++++++\n" << std::endl;
 
 		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
 		if (poll_count < 0) {
@@ -70,6 +71,7 @@ void Server::start(const ServerConfig& config) {
 					}
 
 					std::cout << "New connection accepted! Set identifier " << this->poll_fds.size() << std::endl;
+					running = true;
 
 					// Add the new client socket to poll
 					pollfd new_client_pollfd;
@@ -99,6 +101,11 @@ void Server::start(const ServerConfig& config) {
                         //std::string response = "Hello! Welcome to webserv. This is a default response\n";
 						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
                         std::cout << "Response sent!" << std::endl;
+
+						if (running){
+							std::cout << "\n+++++++ Waiting for activity ++++++++\n" << std::endl;
+							running = false;
+						}
 
 					}
 				}

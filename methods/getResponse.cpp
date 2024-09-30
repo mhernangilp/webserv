@@ -59,7 +59,7 @@ void getResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + toString(notFoundPageContent.size() + 54) + "\r\n"
+                "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -69,9 +69,10 @@ void getResponse(const std::string& url, int client_socket) {
         std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: " + getContentType(filePath) + "\r\n"
-            "Content-Length: " + toString(fileContent.size() + 54) + "\r\n"
+            "Content-Length: " + toString(fileContent.size()) + "\r\n"
             "Connection: close\r\n"
             "\r\n" + fileContent;
         send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
     }
+    close (client_socket);
 }

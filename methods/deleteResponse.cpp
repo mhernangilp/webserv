@@ -80,7 +80,7 @@ void try_delete(std::string resourcePath, int client_socket) {
                 std::string notFoundResponse = 
                 "HTTP/1.1 403 Forbidden\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
                 send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -105,7 +105,7 @@ void try_delete(std::string resourcePath, int client_socket) {
             std::string notFoundResponse = 
             "HTTP/1.1 500 Internal Server Error\r\n"
             "Content-Type: text/html\r\n"
-            "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
+            "Content-Length: " + convertoString(notFoundPageContent.size()) + "\r\n"
             "Connection: close\r\n"
             "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -141,10 +141,11 @@ void deleteResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + convertoString(notFoundPageContent.size() + 54) + "\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
         }
     }
+    close(client_socket);
 }

@@ -71,7 +71,7 @@ void try_delete(std::string resourcePath, int client_socket) {
                 std::string notFoundResponse = 
                      "HTTP/1.1 403 Forbidden\r\n"
                     "Content-Type: text/html\r\n"
-                    "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                    "Content-Length: " + convertoString(notFoundPageContent.size()) + "\r\n"
                     "Connection: close\r\n"
                     "\r\n" +
                     notFoundPageContent;
@@ -132,7 +132,7 @@ void deleteResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + convertoString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" +
                 notFoundPageContent;

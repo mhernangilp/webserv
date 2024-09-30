@@ -50,7 +50,7 @@ void getResponse(const std::string& url, int client_socket) {
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + std::to_string(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" +
                 notFoundPageContent;

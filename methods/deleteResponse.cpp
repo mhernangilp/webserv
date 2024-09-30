@@ -114,13 +114,8 @@ void try_delete(std::string resourcePath, int client_socket) {
 }
 
 void deleteResponse(const std::string& url, int client_socket) {
-    std::string resourcePath;
-
-    if (url.substr(0, 11) == "/up_to_you/") {
-        resourcePath = "docs/kebab_web" + url;
-    } else {
-        resourcePath = "docs/kebab_web/up_to_you" + url;
-    }
+    std::string resourcePath = "docs/kebab_web/gallery" + url;
+    
     if (access(resourcePath.c_str(), F_OK) != -1) {
        try_delete(resourcePath, client_socket);
     } else {

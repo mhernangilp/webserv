@@ -31,13 +31,30 @@ std::string toString(int number) {
 
 void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
-    (void) serverConfig;
-    if (url == "/") {
-        filePath = "docs/kebab_web/index.html";
-    } else {
-        filePath = "docs/kebab_web" + url;
+
+    if (!serverConfig.isGetAllowed(url)) {
+        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
+        std::string body = getFileContent(notFoundPagePath);
+
+        if (body.empty())
+            body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE is not allowed in this ubication.</p></body></html>";
+        std::string response = 
+        "HTTP/1.1 405 Method Not Allowed\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: " + toString(body.size()) + "\r\n" "\r\n"
+        "Connection: close\r\n"
+        "\r\n" +
+        body;
+        send(client_socket, response.c_str(), response.size(), 0);
+        close(client_socket);
+        return;
     }
 
+    if (url == "/") {
+        filePath = serverConfig.root + "index.html";
+    } else {
+        filePath = serverConfig.root + url;
+    }
     std::string fileContent = getFileContent(filePath);
 
     if (fileContent.empty()) {

@@ -94,13 +94,17 @@ void try_delete(std::string url, int client_socket) {
 
 void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     if (!serverConfig.isDeleteAllowed(url)) {
-        std::string body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE no está permitido en esta ubicación.</p></body></html>";
+        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
+        std::string body = FileContent(notFoundPagePath);
+        if (body.empty())
+            body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE is not allowed in this ubication.</p></body></html>";
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", body);
         close(client_socket);
         return;
     }
 
     std::string newUrl = serverConfig.root + url;
+
     if (access(newUrl.c_str(), F_OK) != -1) {
        try_delete(newUrl, client_socket);
     } else {

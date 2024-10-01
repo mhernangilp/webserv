@@ -19,6 +19,7 @@ public:
     void print() const;
     void addLocation(const std::string& path, const LocationConfig& location);
     bool isDeleteAllowed(const std::string& url) const;
+    bool isGetAllowed(const std::string& url) const;
 };
 
 #endif

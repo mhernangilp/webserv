@@ -29,9 +29,9 @@ std::string toString(int number) {
     return ss.str();
 }
 
-void getResponse(const std::string& url, int client_socket) {
+void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
-
+    (void) serverConfig;
     if (url == "/") {
         filePath = "docs/kebab_web/index.html";
     } else {

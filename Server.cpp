@@ -102,7 +102,7 @@ void Server::start(const ServerConfig& config) {
 						clients[i - 1].setRequest(request);
                         std::cout << BLUE <<"\n[INFO] Message received from client " << i << RESET << std::endl;
 
-						method(clients[i - 1].getRequest(), this->poll_fds[i].fd);
+						method(clients[i - 1].getRequest(), this->poll_fds[i].fd, config);
 
 						// Send a response to the client
                         //std::string response = "Hello! Welcome to webserv. This is a default response\n";

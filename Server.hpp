@@ -37,6 +37,6 @@ class Server {
         void    setConfig(ServerConfig& config);
 };
 
-void method(Request request, int socket);
+void method(Request request, int socket, const ServerConfig& serverConfig);
 
 #endif

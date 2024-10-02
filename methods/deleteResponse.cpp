@@ -92,8 +92,31 @@ void try_delete(std::string url, int client_socket) {
     }
 }
 
+std::string urlDecode(const std::string& url) {
+    std::ostringstream decoded;
+    for (size_t i = 0; i < url.size(); ++i) {
+        if (url[i] == '%' && i + 2 < url.size()) {
+            std::istringstream hex(url.substr(i + 1, 2));
+            int value;
+            if (hex >> std::hex >> value) {
+                decoded << static_cast<char>(value);
+                i += 2;
+            }
+        } else if (url[i] == '+') {
+            decoded << ' ';
+        } else {
+            decoded << url[i];
+        }
+    }
+    return decoded.str();
+}
+
 void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
-    if (!serverConfig.isDeleteAllowed(url)) {
+    std::string newUrl;
+    if (access(url.c_str(), F_OK) == -1)
+        newUrl = urlDecode(url);
+
+    if (!serverConfig.isDeleteAllowed(newUrl)) {
         std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
         std::string body = FileContent(notFoundPagePath);
         if (body.empty())
@@ -103,7 +126,7 @@ void deleteResponse(const std::string& url, int client_socket, const ServerConfi
         return;
     }
 
-    std::string newUrl = serverConfig.root + url;
+    newUrl = serverConfig.root + newUrl;
 
     if (access(newUrl.c_str(), F_OK) != -1) {
        try_delete(newUrl, client_socket);

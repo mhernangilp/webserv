@@ -1,5 +1,4 @@
-#include "Method.hpp"
-
+#include "method.hpp"
 
 void method(Request request, int socket, const ServerConfig& serverConfig){
 	std::cout << "----------------------------------------------" << std::endl;

@@ -1,4 +1,4 @@
-#include "Method.hpp"
+#include "method.hpp"
 
 bool isDirectory(const std::string& path) {
     struct stat pathStat;

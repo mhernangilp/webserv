@@ -1,4 +1,4 @@
-#include "Request.hpp"
+#include "Method.hpp"
 
 std::string getContentType(const std::string& filePath) {
     if (filePath.find(".html") != std::string::npos) return "text/html";
@@ -11,28 +11,15 @@ std::string getContentType(const std::string& filePath) {
     return "text/plain";  // Tipo de contenido por defecto
 }
 
-std::string getFileContent(const std::string& filePath) {
-    std::ifstream file(filePath.c_str());
-    if (!file.is_open()) {
-        return "";
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-    return buffer.str();
-}
-
-std::string toString(int number) {
-    std::stringstream ss;
-    ss << number;
-    return ss.str();
-}
-
 void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
+    std::string newUrl;
+    if (access(url.c_str(), F_OK) == -1)
+        newUrl = urlDecode(url);
+    else
+        newUrl = url;
 
-    if (!serverConfig.isGetAllowed(url)) {
+    if (!serverConfig.isGetAllowed(newUrl)) {
         std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
         std::string body = getFileContent(notFoundPagePath);
 
@@ -41,7 +28,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         std::string response = 
         "HTTP/1.1 405 Method Not Allowed\r\n"
         "Content-Type: text/html\r\n"
-        "Content-Length: " + toString(body.size()) + "\r\n" "\r\n"
+        "Content-Length: " + convertToString(body.size()) + "\r\n" "\r\n"
         "Connection: close\r\n"
         "\r\n" +
         body;
@@ -50,10 +37,10 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         return;
     }
 
-    if (url == "/") {
+    if (newUrl == "/") {
         filePath = serverConfig.root + "index.html";
     } else {
-        filePath = serverConfig.root + url;
+        filePath = serverConfig.root + newUrl;
     }
     std::string fileContent = getFileContent(filePath);
 
@@ -67,7 +54,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" +
                 notFoundPageContent;
@@ -76,7 +63,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string notFoundResponse = 
                 "HTTP/1.1 404 Not Found\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + notFoundPageContent;
             send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
@@ -86,7 +73,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         std::string httpResponse =
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: " + getContentType(filePath) + "\r\n"
-            "Content-Length: " + toString(fileContent.size()) + "\r\n"
+            "Content-Length: " + convertToString(fileContent.size()) + "\r\n"
             "Connection: close\r\n"
             "\r\n" + fileContent;
         send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);

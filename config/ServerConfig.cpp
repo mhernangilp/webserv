@@ -5,7 +5,7 @@ ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("local
     
     LocationConfig location = LocationConfig();
     location.location = "/";
-    location.autoindex = false;
+    location.autoindex = "off";
     location.allow_methods.push_back("DELETE");
     location.allow_methods.push_back("POST");
     location.allow_methods.push_back("GET");
@@ -13,7 +13,7 @@ ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("local
     
     location = LocationConfig();
     location.location = "/kebabs";
-    location.autoindex = true;
+    location.autoindex = "on";
     location.allow_methods.push_back("GET");
     location.allow_methods.push_back("POST");
     location.index = "kebab.html";

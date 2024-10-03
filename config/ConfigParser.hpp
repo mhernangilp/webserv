@@ -1,4 +1,7 @@
 #include "ServerConfig.hpp"
+#include <unistd.h>
+#include <cstring>
+#include <iostream>
 
 #define RESET      "\033[0m"
 #define RED        "\033[31m"

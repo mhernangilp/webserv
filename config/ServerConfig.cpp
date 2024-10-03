@@ -5,7 +5,7 @@ ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("local
     
     LocationConfig location = LocationConfig();
     location.location = "/";
-    location.autoindex = false;
+    location.autoindex = "off";
     location.allow_methods.push_back("DELETE");
     location.allow_methods.push_back("POST");
     location.allow_methods.push_back("GET");
@@ -13,7 +13,7 @@ ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("local
     
     location = LocationConfig();
     location.location = "/kebabs";
-    location.autoindex = true;
+    location.autoindex = "on";
     location.allow_methods.push_back("GET");
     location.allow_methods.push_back("POST");
     location.index = "kebab.html";
@@ -55,4 +55,38 @@ void ServerConfig::print() const {
 
 void ServerConfig::addLocation(const std::string& path, const LocationConfig& location) {
     locations[path] = location;
+}
+
+bool ServerConfig::isDeleteAllowed(const std::string& url) const {
+    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string& path = it->first;
+        const LocationConfig& locationConfig = it->second;
+
+        if (url.find(path) == 0) {
+            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
+            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
+                if (*methodIt == "DELETE") {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool ServerConfig::isGetAllowed(const std::string& url) const {
+    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string& path = it->first;
+        const LocationConfig& locationConfig = it->second;
+
+        if (url.find(path) == 0) {
+            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
+            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
+                if (*methodIt == "GET") {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }

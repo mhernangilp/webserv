@@ -1,7 +1,7 @@
 #include "Request.hpp"
 
 
-void method(Request request, int socket){
+void method(Request request, int socket, const ServerConfig& serverConfig){
 	std::cout << "----------------------------------------------" << std::endl;
 	std::cout << request.getMethod() << std::endl;
 	std::cout << request.getUrl() << std::endl;
@@ -12,7 +12,7 @@ void method(Request request, int socket){
 	std::cout << "----------------------------------------------" << std::endl;
 						
 	if (request.getMethod() == "GET")
-		getResponse(request.getUrl(), socket);
+		getResponse(request.getUrl(), socket, serverConfig);
 	if (request.getMethod() == "DELETE")
-		deleteResponse(request.getUrl(), socket);
+		deleteResponse(request.getUrl(), socket, serverConfig);
 }

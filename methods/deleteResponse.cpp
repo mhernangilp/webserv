@@ -78,7 +78,7 @@ void deleteResponse(const std::string& url, int client_socket, const ServerConfi
         newUrl = urlDecode(url);
 
     if (!serverConfig.isDeleteAllowed(newUrl)) {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
         std::string body = getFileContent(notFoundPagePath);
         if (body.empty())
             body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE is not allowed in this ubication.</p></body></html>";
@@ -92,7 +92,7 @@ void deleteResponse(const std::string& url, int client_socket, const ServerConfi
     if (access(newUrl.c_str(), F_OK) != -1) {
        try_delete(newUrl, client_socket);
     } else {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/404.html";
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/404.html";
         std::string body = getFileContent(notFoundPagePath);
 
         if (body.empty()) {

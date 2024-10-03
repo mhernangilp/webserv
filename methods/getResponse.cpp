@@ -20,7 +20,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         newUrl = url;
 
     if (!serverConfig.isGetAllowed(newUrl)) {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
         std::string body = getFileContent(notFoundPagePath);
 
         if (body.empty())

@@ -1,3 +1,4 @@
+#include "method.hpp"
 #include "Request.hpp"
 #include <sys/stat.h>
 #include <iostream>
@@ -136,9 +137,15 @@ std::string removeDuplicateSlashes(const std::string& path) {
 void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
+    std::string newUrl;
+    
+    if (access(url.c_str(), F_OK) == -1)
+        newUrl = urlDecode(url);
+    else
+        newUrl = url;
 
-    if (!serverConfig.isGetAllowed(url)) {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
+    if (!serverConfig.isGetAllowed(newUrl)) {
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
         std::string body = getFileContent(notFoundPagePath);
 
         if (body.empty())
@@ -146,7 +153,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         std::string response = 
         "HTTP/1.1 405 Method Not Allowed\r\n"
         "Content-Type: text/html\r\n"
-        "Content-Length: " + toString(body.size()) + "\r\n" "\r\n"
+        "Content-Length: " + convertToString(body.size()) + "\r\n" "\r\n"
         "Connection: close\r\n"
         "\r\n" +
         body;
@@ -155,10 +162,10 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         return;
     }
 
-    if (url == "/") {
+    if (newUrl == "/") {
         filePath = serverConfig.root + "index.html";
     } else {
-        filePath = serverConfig.root + url;
+        filePath = serverConfig.root + newUrl;
     }
 
     filePath = removeDuplicateSlashes(filePath);
@@ -182,7 +189,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string forbiddenResponse =
                 "HTTP/1.1 403 Forbidden\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + toString(forbiddenPageContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + forbiddenPageContent;
             send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
@@ -192,7 +199,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string autoIndexResponse =
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + toString(autoIndexContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + autoIndexContent;
             send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
@@ -237,9 +244,9 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         } else {
             // Si se encuentra el archivo solicitado, devolver su contenido con un código 200 OK
             std::string httpResponse =
-                "HTTP/1.1 200 OK\r\n"
+            "HTTP/1.1 200 OK\r\n"
                 "Content-Type: " + getContentType(filePath) + "\r\n"
-                "Content-Length: " + toString(fileContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(fileContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + fileContent;
             send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);

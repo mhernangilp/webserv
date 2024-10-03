@@ -1,26 +1,4 @@
-#include "Request.hpp"
-#include "../config/ServerConfig.hpp"
-#include <dirent.h>
-#include <sys/stat.h> // Para verificar si es un directorio
-#include <unistd.h>   // Para usar remove
-
-std::string FileContent(const std::string& filePath) {
-    std::ifstream file(filePath.c_str(), std::ios::binary);
-    if (!file.is_open()) {
-        return "";
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-    return buffer.str();
-}
-
-std::string convertoString(int number) {
-    std::stringstream ss;
-    ss << number;
-    return ss.str();
-}
+#include "method.hpp"
 
 bool isDirectory(const std::string& path) {
     struct stat pathStat;
@@ -63,7 +41,7 @@ void sendHttpResponse(int client_socket, const std::string& statusCode, const st
     std::string response = 
         "HTTP/1.1 " + statusCode + "\r\n"
         "Content-Type: " + contentType + "\r\n"
-        "Content-Length: " + convertoString(body.size()) + "\r\n"
+        "Content-Length: " + convertToString(body.size()) + "\r\n"
         "Connection: close\r\n"
         "\r\n" + body;
     
@@ -75,7 +53,7 @@ void try_delete(std::string url, int client_socket) {
         if (!checkdir(url, client_socket)) {
             sendHttpResponse(client_socket, "204 No Content", "text/html", "");
         } else {
-            std::string body = FileContent("docs/kebab_web/error_pages/403.html");
+            std::string body = getFileContent("docs/kebab_web/error_pages/403.html");
             if (body.empty()) {
                 body = "<html><body><h1>403 Forbidden</h1><p>You don't have permission to access this resource.</p></body></html>";
             }
@@ -84,7 +62,7 @@ void try_delete(std::string url, int client_socket) {
     } else if (remove(url.c_str()) == 0) {
         sendHttpResponse(client_socket, "204 No Content", "text/html", "");
     } else {
-        std::string body = FileContent("docs/kebab_web/error_pages/500.html");
+        std::string body = getFileContent("docs/kebab_web/error_pages/500.html");
         if (body.empty()) {
             body = "<html><body><h1>500 Internal Server Error</h1><p>An error occurred while deleting the resource.</p></body></html>";
         }
@@ -92,10 +70,16 @@ void try_delete(std::string url, int client_socket) {
     }
 }
 
+
+
 void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
-    if (!serverConfig.isDeleteAllowed(url)) {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/405.html";
-        std::string body = FileContent(notFoundPagePath);
+    std::string newUrl;
+    if (access(url.c_str(), F_OK) == -1)
+        newUrl = urlDecode(url);
+
+    if (!serverConfig.isDeleteAllowed(newUrl)) {
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
+        std::string body = getFileContent(notFoundPagePath);
         if (body.empty())
             body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE is not allowed in this ubication.</p></body></html>";
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", body);
@@ -103,13 +87,13 @@ void deleteResponse(const std::string& url, int client_socket, const ServerConfi
         return;
     }
 
-    std::string newUrl = serverConfig.root + url;
+    newUrl = serverConfig.root + newUrl;
 
     if (access(newUrl.c_str(), F_OK) != -1) {
        try_delete(newUrl, client_socket);
     } else {
-        std::string notFoundPagePath = serverConfig.root + "/error_pages/404.html";
-        std::string body = FileContent(notFoundPagePath);
+        std::string notFoundPagePath = "docs/kebab_web/error_pages/404.html";
+        std::string body = getFileContent(notFoundPagePath);
 
         if (body.empty()) {
             body = "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";

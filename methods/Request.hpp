@@ -34,7 +34,4 @@ class Request {
         void parseRequest(const std::string& raw_request);
 };
 
-void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
-void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
-
 #endif

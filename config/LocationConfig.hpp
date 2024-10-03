@@ -12,7 +12,7 @@ class LocationConfig {
 public:
     std::string location;
     std::string root;
-    bool autoindex;
+    std::string autoindex;
     std::vector<std::string> allow_methods;
     std::string index;
     std::string return_path;

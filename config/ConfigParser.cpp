@@ -140,14 +140,13 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
         if (key == "root") {
             iss >> current_location.root;
         } else if (key == "autoindex") {
-            std::string autoindex;
-            iss >> autoindex;
-            if (autoindex == "on;")
-                current_location.autoindex = true;
-            else if (autoindex == "off;")
-                current_location.autoindex = false;
-            else {
-                std::cerr << RED << "[ERR] autoindex value not valid ";
+            std::string temp_autoindex;
+            iss >> temp_autoindex;
+            if (!temp_autoindex.empty()) {
+                current_location.autoindex = temp_autoindex.substr(0, temp_autoindex.size() - 1);
+            }
+            if (current_location.autoindex != "on" && current_location.autoindex != "off") {
+                std::cerr << RED << "Error. autoindex value not valid ";
                 return 1;
             }
         } else if (key == "allow_methods") {

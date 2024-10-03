@@ -18,24 +18,6 @@ std::string getContentType(const std::string& filePath) {
     return "text/plain";  // Tipo de contenido por defecto
 }
 
-std::string getFileContent(const std::string& filePath) {
-    std::ifstream file(filePath.c_str());
-    if (!file.is_open()) {
-        return "";
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    file.close();
-    return buffer.str();
-}
-
-std::string toString(int number) {
-    std::stringstream ss;
-    ss << number;
-    return ss.str();
-}
-
 std::string generateAutoIndexPage(const std::string& dirPath, const std::string& urlPath) {
     DIR *dir;
     struct dirent *ent;
@@ -113,8 +95,6 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
-
-
 std::string removeDuplicateSlashes(const std::string& path) {
     std::string result;
     bool lastWasSlash = false;
@@ -149,7 +129,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         std::string body = getFileContent(notFoundPagePath);
 
         if (body.empty())
-            body = "<html><body><h1>405 Method Not Allowed</h1><p>DELETE is not allowed in this ubication.</p></body></html>";
+            body = "<html><body><h1>405 Method Not Allowed</h1><p>GET is not allowed in this ubication.</p></body></html>";
         std::string response = 
         "HTTP/1.1 405 Method Not Allowed\r\n"
         "Content-Type: text/html\r\n"
@@ -178,7 +158,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
 
         if (indexContent.empty() && !autoindex_allowed(filePath, serverConfig)) {
             // Retornar un error 403 Forbidden
-            std::string forbiddenPagePath = serverConfig.root + "/error_pages/403.html";
+            std::string forbiddenPagePath =  "docs/kebab_web/error_pages/403.html";
             std::string forbiddenPageContent = getFileContent(forbiddenPagePath);
 
             if (forbiddenPageContent.empty()) {
@@ -189,7 +169,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string forbiddenResponse =
                 "HTTP/1.1 403 Forbidden\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(forbiddenPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + forbiddenPageContent;
             send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
@@ -199,7 +179,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string autoIndexResponse =
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/html\r\n"
-                "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(autoIndexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + autoIndexContent;
             send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
@@ -208,7 +188,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
             std::string httpResponse =
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: " + getContentType(indexPath) + "\r\n"
-                "Content-Length: " + toString(indexContent.size()) + "\r\n"
+                "Content-Length: " + convertToString(indexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + indexContent;
             send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
@@ -227,7 +207,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 std::string notFoundResponse = 
                     "HTTP/1.1 404 Not Found\r\n"
                     "Content-Type: text/html\r\n"
-                    "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
+                    "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                     "Connection: close\r\n"
                     "\r\n" +
                     notFoundPageContent;
@@ -236,7 +216,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 std::string notFoundResponse = 
                     "HTTP/1.1 404 Not Found\r\n"
                     "Content-Type: text/html\r\n"
-                    "Content-Length: " + toString(notFoundPageContent.size()) + "\r\n"
+                    "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                     "Connection: close\r\n"
                     "\r\n" + notFoundPageContent;
                 send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);

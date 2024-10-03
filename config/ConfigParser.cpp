@@ -82,6 +82,11 @@ int ConfigParser::parseConfig(const std::string& filename) {
         return 1;
     }
 
+    if (access((server.root + server.index).c_str(), R_OK)) {
+        std::cerr << RED << "[ERR] Invalid index." << RESET << std::endl;
+        return 1;
+    }
+
     return 0;
 }
 

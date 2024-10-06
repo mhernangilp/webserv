@@ -9,6 +9,7 @@
 
 void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
 void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
+void postResponse(int socket, Request request);
 
 std::string convertToString(int number);
 std::string getFileContent(const std::string& filePath);

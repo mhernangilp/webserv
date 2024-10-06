@@ -14,6 +14,8 @@ void method(Request request, int socket, const ServerConfig& serverConfig){
 		getResponse(request.getUrl(), socket, serverConfig);
 	if (request.getMethod() == "DELETE")
 		deleteResponse(request.getUrl(), socket, serverConfig);
+	if (request.getMethod() == "POST")
+		postResponse(socket, request);
 }
 
 std::string getFileContent(const std::string& filePath) {

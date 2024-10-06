@@ -30,6 +30,8 @@ class Request {
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
 
+        void parseChunkedBody(std::istringstream& stream);
+
     private:
         void parseRequest(const std::string& raw_request);
 };

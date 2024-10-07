@@ -1,88 +1,215 @@
+/*
 #include "method.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
-#include <algorithm> // Para std::replace
+#include <cstring>
+#include <unistd.h> // Para el uso de close
+#include <errno.h>   // Para el uso de errno
+#include <cstdlib>   // Para std::stoi y std::string
 
-void HttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
-    // Construir la respuesta HTTP
-    std::string response = 
-        "HTTP/1.1 " + statusCode + "\r\n" +
-        "Content-Type: " + contentType + "\r\n" +
-        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
-        "Connection: close\r\n" + // Cerrar conexión después de la respuesta
-        "\r\n" + // Línea en blanco que separa headers del cuerpo
-        body; // Cuerpo de la respuesta
-    
-    // Enviar la respuesta al socket del cliente
-    ssize_t sent_bytes = send(client_socket, response.c_str(), response.size(), 0);
-    if (sent_bytes < 0) {
-        std::cerr << "Error sending response: " << strerror(errno) << std::endl; // Manejo de errores en el envío
-    }
+// Función para crear un directorio
+bool createDirectory(const std::string& path) {
+    return (mkdir(path.c_str(), 0755) == 0 || errno == EEXIST);
 }
 
-void postResponse(int client_socket, Request request) {
-    std::string content_type = request.getHeaders()["Content-Type"];
-    
-    if (content_type.find("multipart/form-data") != std::string::npos) {
-        // Extraer el boundary
-        std::string boundary = "--" + content_type.substr(content_type.find("boundary=") + 9);
-        boundary = boundary.substr(0, boundary.find(";")); // Extrae el límite si tiene ";" al final
+// Función para guardar un archivo en el sistema de archivos
+bool saveFile(const std::string& filename, const std::string& content) {
+    std::ofstream outfile(filename.c_str(), std::ios::binary);
+    if (!outfile) {
+        std::cerr << "Error al abrir el archivo: " << filename << std::endl;
+        return false;
+    }
+    outfile.write(content.c_str(), content.size());
+    outfile.close();
+    return true;
+}
 
-        // Maneja el contenido multipart
-        std::string body = request.getBody();
-        std::size_t pos = 0;
+// Función para enviar la respuesta HTTP al cliente
+void HttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
+    std::string response =
+        "HTTP/1.1 " + statusCode + "\r\n"
+        "Content-Type: " + contentType + "\r\n"
+        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+        "Connection: close\r\n"
+        "\r\n" + body;
 
-        // Asegurarse de que la carpeta existe
-        std::string gallery_path = "docs/kebab_web/gallery";
-        mkdir(gallery_path.c_str(), 0777); // Crear la carpeta si no existe
+    send(client_socket, response.c_str(), response.size(), 0);
+}
 
-        // Iterar sobre cada parte del multipart
-        while ((pos = body.find(boundary, pos)) != std::string::npos) {
-            pos += boundary.length();
-            std::size_t end_pos = body.find(boundary, pos);
-            if (end_pos == std::string::npos) break;
-            std::string part = body.substr(pos, end_pos - pos);
-            pos = end_pos; // Moverse a la siguiente parte
+// Función para parsear el body de la solicitud POST
+void postResponse(const std::string& request_body, const std::string& boundary, int client_socket) {
+    std::stringstream ss(request_body);
+    std::string line;
+    std::map<std::string, std::string> form_data;
 
-            // Busca el campo "Content-Disposition"
-            std::size_t content_disposition_pos = part.find("Content-Disposition: ");
-            if (content_disposition_pos != std::string::npos) {
-                std::size_t filename_pos = part.find("filename=\"");
-                if (filename_pos != std::string::npos) {
-                    // Extraer el nombre del archivo
-                    filename_pos += 10; // Longitud de 'filename="'
-                    std::size_t filename_end_pos = part.find("\"", filename_pos);
-                    std::string filename = part.substr(filename_pos, filename_end_pos - filename_pos);
+    std::string part;
+    while (std::getline(ss, line)) {
+        if (line == "--" + boundary) {
+            if (!part.empty()) {
+                size_t pos = part.find("\r\n\r\n");
+                if (pos != std::string::npos) {
+                    std::string headers = part.substr(0, pos);
+                    std::string body = part.substr(pos + 4); // +4 para saltar los CRLF
 
-                    // Limpiar el nombre del archivo
-                    std::replace(filename.begin(), filename.end(), '/', '_'); // Reemplaza '/' por '_'
-                    std::replace(filename.begin(), filename.end(), '\\', '_'); // Reemplaza '\' por '_'
+                    // Procesar encabezados
+                    std::string content_disposition;
+                    std::istringstream header_stream(headers);
+                    while (std::getline(header_stream, line)) {
+                        if (line.find("Content-Disposition:") != std::string::npos) {
+                            content_disposition = line;
+                        }
+                    }
 
-                    // Encontrar el contenido del archivo
-                    std::size_t file_content_pos = part.find("\r\n\r\n") + 4; // Salto después de los headers
-                    std::size_t file_content_end = part.rfind("\r\n");
-                    std::string file_content = part.substr(file_content_pos, file_content_end - file_content_pos);
+                    // Extraer el nombre del campo y el nombre del archivo
+                    std::string name, filename;
+                    size_t name_start = content_disposition.find("name=\"") + 6;
+                    size_t name_end = content_disposition.find("\"", name_start);
+                    name = content_disposition.substr(name_start, name_end - name_start);
 
-                    // Guardar el archivo en binario
-                    std::string file_path = gallery_path + "/" + filename; // Define tu ruta
-                    std::ofstream file(file_path, std::ios::binary);
-                    if (file) {
-                        file.write(file_content.c_str(), file_content.length());
-                        file.close();
-                        std::cout << "Archivo guardado: " << file_path << std::endl;
+                    if (content_disposition.find("filename=") != std::string::npos) {
+                        size_t filename_start = content_disposition.find("filename=\"") + 10;
+                        size_t filename_end = content_disposition.find("\"", filename_start);
+                        filename = content_disposition.substr(filename_start, filename_end - filename_start);
+
+                        // Crear directorios si no existen
+                        std::string base_path = "docs/kebab_web/gallery";
+                        createDirectory(base_path); // Crear el directorio base
+
+                        // Guardar el archivo
+                        if (saveFile(base_path + "/" + filename, body)) {
+                            std::cout << "Archivo subido: " << filename << std::endl;
+                        }
                     } else {
-                        std::cerr << "No se pudo abrir el archivo para escribir: " << file_path << std::endl;
+                        // Si no es un archivo, guardar en form_data
+                        form_data[name] = body;
                     }
                 }
+                part.clear();
             }
+        } else if (!line.empty()) {
+            part += line + "\n"; // Construir la parte
         }
-
-        // Enviar respuesta de éxito
-        std::string bodyResponse = "File uploaded successfully!";
-        HttpResponse(client_socket, "200 OK", "text/plain", bodyResponse);
-    } else {
-        // Manejar otros tipos de contenido, por ejemplo, application/x-www-form-urlencoded
-        std::string bodyResponse = "Unsupported content type!";
-        HttpResponse(client_socket, "400 Bad Request", "text/plain", bodyResponse);
     }
+
+    // Enviar una respuesta al cliente
+    HttpResponse(client_socket, "204 No Content", "text/html", "");
+}
+
+// Función para recibir el cuerpo de la solicitud
+std::string receiveBody(int client_socket, int content_length) {
+    std::string body;
+    body.resize(content_length);
+    int bytes_received = 0;
+    
+    // Recibir datos en partes
+    while (bytes_received < content_length) {
+        int result = recv(client_socket, &body[bytes_received], content_length - bytes_received, 0);
+        if (result <= 0) {
+            std::cerr << "Error al recibir datos" << std::endl;
+            return "";
+        }
+        bytes_received += result;
+    }
+    return body;
+}
+
+// Función principal para manejar la solicitud POST
+void handle_post_request(int client_socket) {
+    const int BUFFER_SIZE = 4096;
+    char buffer[BUFFER_SIZE];
+
+    // Recibir la solicitud
+    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+    if (bytes_received <= 0) {
+        std::cerr << "Error al recibir la solicitud" << std::endl;
+        return;
+    }
+
+    // Convertir el buffer a string usando assign
+    std::string request;
+    request.assign(buffer, bytes_received);
+
+    // Buscar el header Content-Length para determinar la longitud del body
+    size_t content_length_pos = request.find("Content-Length: ");
+    if (content_length_pos != std::string::npos) {
+        size_t start = content_length_pos + 16; // 16 es la longitud de "Content-Length: "
+        size_t end = request.find("\r\n", start);
+        
+        // Validar que el substring sea un número válido
+        std::string content_length_str = request.substr(start, end - start);
+        if (content_length_str.empty() || !std::all_of(content_length_str.begin(), content_length_str.end(), ::isdigit)) {
+            std::cerr << "Content-Length no es un número válido" << std::endl;
+            return;
+        }
+        
+        // Convertir a entero
+        int content_length = std::stoi(content_length_str);
+        
+        // Recibir el body
+        std::string body = receiveBody(client_socket, content_length);
+        if (!body.empty()) {
+            // Extraer el boundary del header Content-Type
+            std::string boundary;
+            if (request.find("Content-Type: multipart/form-data;") != std::string::npos) {
+                size_t boundary_pos = request.find("boundary=") + 9; // 9 para saltar "boundary="
+                boundary = request.substr(boundary_pos);
+                boundary.erase(0, boundary.find_first_not_of(" \r\n")); // Quitar espacios y nuevos renglones
+                boundary.erase(boundary.find_last_not_of(" \r\n") + 1); // Limpiar también el final
+            }
+            std::cout << "Boundary: " << boundary << std::endl;
+            std::cout << "Body: " << body << std::endl;
+            postResponse(body, boundary, client_socket);
+        }
+    } else {
+        std::cerr << "No se encontró Content-Length en la solicitud" << std::endl;
+    }
+
+    close(client_socket);
+}
+*/
+
+
+
+#include "method.hpp"
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
+
+// Función para enviar la respuesta HTTP
+void HttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
+    std::string response =
+        "HTTP/1.1 " + statusCode + "\r\n"
+        "Content-Type: " + contentType + "\r\n"
+        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+        "Connection: close\r\n"
+        "\r\n" + body;
+
+    send(client_socket, response.c_str(), response.size(), 0);
+}
+
+// Función para manejar la respuesta POST
+void handle_post_request(int client_socket) {
+    // Crear el archivo donde se va a guardar el cuerpo del POST
+    std::ofstream outFile("upload.txt", std::ios::out | std::ios::trunc);
+    if (!outFile.is_open()) {
+        // Enviar una respuesta de error HTTP 500 si no se puede abrir el archivo
+        std::string body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+        HttpResponse(client_socket, "500 Internal Server Error", "text/html", body);
+        return;
+    }
+
+    // Asumimos que el cuerpo de la solicitud ya está disponible en esta parte
+    std::string body = "This is a placeholder for the POST body content"; // Reemplazar con el contenido real del cuerpo POST
+
+    // Guardar el contenido del cuerpo en el archivo
+    outFile << body;
+    outFile.close();
+
+    // Generar una respuesta HTML simple al cliente
+    std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
+    HttpResponse(client_socket, "200 OK", "text/html", response_body);
+
+    // Cerrar el socket después de enviar la respuesta
+    close(client_socket);
 }

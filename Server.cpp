@@ -144,7 +144,6 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     }
 
     Request request(accumulated_request);
-	std::cout << "--  --->" << request.getFileName() << std::endl;
     clients[client_index - 1].setRequest(request);
 
     std::cout << "[INFO] Message received from client " << client_index << std::endl;

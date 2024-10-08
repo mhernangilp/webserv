@@ -16,6 +16,7 @@ void Request::parseRequest(const std::string& raw_request) {
     std::istringstream stream(raw_request);
     std::string line;
 
+    code = 0;
     // Leer la línea de la solicitud
     std::getline(stream, line);
     std::istringstream request_line(line);
@@ -67,18 +68,23 @@ void Request::parseRequest(const std::string& raw_request) {
                             this->file_name = header.substr(filenamePos, endQuotePos - filenamePos);
                         } else {
                             std::cerr << "End quote for filename not found!" << std::endl;
+                            code = 400;
                         }
                     } else {
                         std::cerr << "Filename not found!" << std::endl;
+                        code = 400;
                     }
                 } else {
                     std::cerr << "Header end not found or invalid range!" << std::endl;
+                    code = 401;
                 }
             } else {
                 std::cerr << "Boundary not found in the body!" << std::endl;
+                code = 415;
             }
         } else {
             std::cerr << "No headers found!" << std::endl;
+            code = 401;
         }
     }
 }
@@ -91,3 +97,4 @@ std::string Request::getHost() const { return host; }
 std::map<std::string, std::string> Request::getHeaders() const { return headers; }
 std::string Request::getBody() const { return body; }
 std::string Request::getFileName() const { return file_name; }
+int Request::getCode() { return code; }

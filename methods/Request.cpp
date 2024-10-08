@@ -36,34 +36,53 @@ void Request::parseRequest(const std::string& raw_request) {
         }
     }
 
-    // Si el método es POST, maneja el cuerpo
     if (method == "POST") {
-        if (headers.find("Content-Length") != headers.end()) {
-            size_t content_length = std::stoi(headers["Content-Length"]);
-            body.resize(content_length); // Preasigna el tamaño del cuerpo
-            stream.read(&body[0], content_length); // Lee el cuerpo en el string
-            // Aquí puedes decidir si quieres hacer algo con el cuerpo, como almacenarlo en un archivo
-        } else if (headers.find("Transfer-Encoding") != headers.end() && headers["Transfer-Encoding"] == "chunked") {
-            parseChunkedBody(stream);
+        std::size_t pos = raw_request.find("\r\n\r\n");
+
+        if (pos != std::string::npos) {
+            body = raw_request.substr(pos + 4);
+
+            // Buscar el boundary
+            std::string boundaryMarker = "------WebKitFormBoundary"; // Cambia esto si tu boundary tiene un nombre diferente
+            std::size_t boundaryPos = body.find(boundaryMarker);
+
+            if (boundaryPos != std::string::npos) {
+
+                std::size_t nextBoundaryPos = body.find(boundaryMarker, boundaryPos + boundaryMarker.length());
+                std::size_t filePartEnd = (nextBoundaryPos != std::string::npos) ? nextBoundaryPos : body.length();
+
+                // Extraer la parte del archivo, que está después de la cabecera
+                std::size_t filePartStart = boundaryPos + boundaryMarker.length(); // Moverse justo después del boundary
+                std::size_t headerEnd = body.find("\r\n\r\n", filePartStart); // Encontrar el final de la cabecera
+
+                if (headerEnd != std::string::npos && filePartEnd > headerEnd) {
+                    std::string filePart = body.substr(headerEnd + 4, filePartEnd - (headerEnd + 4));
+                    std::string header = body.substr(boundaryPos, headerEnd - boundaryPos);
+                    std::size_t filenamePos = header.find("filename=\"");
+                    if (filenamePos != std::string::npos) {
+                        filenamePos += 10; // Moverse después de "filename=\""
+                        std::size_t endQuotePos = header.find("\"", filenamePos);
+                        if (endQuotePos != std::string::npos) {
+                            this->file_name = header.substr(filenamePos, endQuotePos - filenamePos);
+                        } else {
+                            std::cerr << "End quote for filename not found!" << std::endl;
+                        }
+                    } else {
+                        std::cerr << "Filename not found!" << std::endl;
+                    }
+                } else {
+                    std::cerr << "Header end not found or invalid range!" << std::endl;
+                }
+            } else {
+                std::cerr << "Boundary not found in the body!" << std::endl;
+            }
+        } else {
+            std::cerr << "No headers found!" << std::endl;
         }
-        std::cout << body << std::endl;
     }
+
 }
 
-void Request::parseChunkedBody(std::istringstream& stream) {
-    std::string chunk_size_str;
-    while (std::getline(stream, chunk_size_str)) {
-        size_t chunk_size = std::stoul(chunk_size_str, nullptr, 16); // Convertir el tamaño del chunk de hexadecimal a decimal
-        if (chunk_size == 0) break; // Si el tamaño es 0, hemos terminado
-
-        std::string chunk_data(chunk_size, '\0'); // Crear un buffer para el chunk
-        stream.read(&chunk_data[0], chunk_size); // Leer el chunk
-        body.append(chunk_data); // Agregarlo al cuerpo
-
-        // Leer la línea final del chunk (normalmente es CRLF)
-        std::getline(stream, chunk_size_str); 
-    }
-}
 
 std::string Request::getMethod() const { return method; }
 std::string Request::getUrl() const { return url; }
@@ -71,3 +90,4 @@ std::string Request::getHttpVersion() const { return http_version; }
 std::string Request::getHost() const { return host; }
 std::map<std::string, std::string> Request::getHeaders() const { return headers; }
 std::string Request::getBody() const { return body; }
+std::string Request::getFileName() const { return file_name; }

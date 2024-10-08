@@ -167,49 +167,79 @@ void handle_post_request(int client_socket) {
 */
 
 
-
-#include "method.hpp"
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
-#include <sys/socket.h>
-#include <unistd.h>
-
-// Función para enviar la respuesta HTTP
-void HttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
-    std::string response =
-        "HTTP/1.1 " + statusCode + "\r\n"
-        "Content-Type: " + contentType + "\r\n"
-        "Content-Length: " + std::to_string(body.size()) + "\r\n"
-        "Connection: close\r\n"
-        "\r\n" + body;
-
-    send(client_socket, response.c_str(), response.size(), 0);
-}
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include "method.hpp"
 
 // Función para manejar la respuesta POST
-void handle_post_request(int client_socket) {
-    // Crear el archivo donde se va a guardar el cuerpo del POST
-    std::ofstream outFile("upload.txt", std::ios::out | std::ios::trunc);
-    if (!outFile.is_open()) {
-        // Enviar una respuesta de error HTTP 500 si no se puede abrir el archivo
-        std::string body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
-        HttpResponse(client_socket, "500 Internal Server Error", "text/html", body);
+void handle_post_request(int client_socket, std::string raw_request) {
+    std::map<std::string, std::string> headers; // Deberías llenar esto con tus encabezados
+
+    // Extraer el cuerpo de la solicitud
+    std::string body = raw_request;
+
+    // Verifica el header Content-Type
+    if (headers.find("Content-Type") == headers.end()) {
+        sendHttpResponse(client_socket, "400 Bad Request", "text/html", "<h1>400 Bad Request</h1><p>No Content-Type specified.</p>");
         return;
     }
 
-    // Asumimos que el cuerpo de la solicitud ya está disponible en esta parte
-    std::string body = "This is a placeholder for the POST body content"; // Reemplazar con el contenido real del cuerpo POST
+    std::string content_type = headers["Content-Type"];
+    if (content_type.find("multipart/form-data") != std::string::npos) {
+        std::string filename; // Para almacenar el nombre del archivo
 
-    // Guardar el contenido del cuerpo en el archivo
-    outFile << body;
-    outFile.close();
+        // Extraer el nombre del archivo del header
+        if (headers.find("filename") != headers.end()) {
+            filename = headers["filename"]; // Asegúrate de que estás almacenando el nombre correctamente
+        } else {
+            sendHttpResponse(client_socket, "400 Bad Request", "text/html", "<h1>400 Bad Request</h1><p>No filename specified.</p>");
+            return;
+        }
 
-    // Generar una respuesta HTML simple al cliente
-    std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
-    HttpResponse(client_socket, "200 OK", "text/html", response_body);
+        // Construir la ruta completa donde se guardará el archivo
+        std::string filePath = "docs/kebab_web/gallery/" + filename;
 
-    // Cerrar el socket después de enviar la respuesta
-    close(client_socket);
+        // Crear el archivo donde se va a guardar el cuerpo del POST
+        std::ofstream outFile(filePath.c_str(), std::ios::out | std::ios::trunc);
+        if (!outFile.is_open()) {
+            // Enviar una respuesta de error HTTP 500 si no se puede abrir el archivo
+            std::string body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", body);
+            return;
+        }
+
+        // Guardar el contenido del cuerpo en el archivo
+        outFile << body; // Asegúrate de que `body` contiene el contenido real del archivo
+        outFile.close();
+
+        // Generar una respuesta HTML simple al cliente
+        std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
+        sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+    } else {
+        // Manejo de otros tipos de contenido, si es necesario
+        sendHttpResponse(client_socket, "415 Unsupported Media Type", "text/html", "<h1>415 Unsupported Media Type</h1><p>Only multipart/form-data is supported.</p>");
+    }
+}
+
+
+void postResponse(std::string name, std::string body, int client_socket){
+    std::ofstream outFile("docs/kebab_web/gallery/" + name);
+
+    // Verificar si el archivo se abrió correctamente
+    if (!outFile) {
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/500.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        return; 
+    } else{
+        outFile << body;
+        outFile.close();
+        std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
+        sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+    }
+    close (client_socket);
 }

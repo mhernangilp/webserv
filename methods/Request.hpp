@@ -18,7 +18,7 @@ class Request {
         std::string host;                    // Host (campo "Host" en los headers)
         std::map<std::string, std::string> headers; // Headers HTTP (otros campos como User-Agent, etc.)
         std::string body;                    // Cuerpo del mensaje (si hay uno)
-        std::map<std::string, std::string> form_data; // Datos de formulario (si es una solicitud POST)
+        std::string file_name;
 
     public:
     Request();
@@ -30,9 +30,7 @@ class Request {
         std::string getHost() const;
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
-
-        void parseChunkedBody(std::istringstream& stream);
-        void parseFormData(const std::string& body);
+        std::string getFileName() const;
 
     private:
         void parseRequest(const std::string& raw_request);

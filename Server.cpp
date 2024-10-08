@@ -88,32 +88,72 @@ void Server::start(const ServerConfig& config) {
                     Client new_client;
                     this->clients.push_back(new_client);
 				} else { // Read data from the client
-					char buffer[1024] = {0};
-					int bytesRead = read(this->poll_fds[i].fd, buffer, 1024);
-					if (bytesRead <= 0) { // If there is no data or the connection is closed
-						std::cout << LIGHT_BLUE <<"[INFO] Client " << i << " Disconnected, Closing Connection ..." << RESET << std::endl;
-						close(this->poll_fds[i].fd);
-						this->poll_fds.erase(this->poll_fds.begin() + i);
-                        this->clients.erase(this->clients.begin() + (i - 1));
+					bool clientConnected = processClientRequest(poll_fds[i].fd, i, poll_fds, clients);
+					if (!clientConnected)
 						i--;
-					} else {
-						std::string raw_request(buffer, bytesRead);
-                        Request request(raw_request);
-						clients[i - 1].setRequest(request);
-                        std::cout << BLUE <<"\n[INFO] Message received from client " << i << RESET << std::endl;
-
-						method(clients[i - 1].getRequest(), this->poll_fds[i].fd, config);
-
-						// Send a response to the client
-                        //std::string response = "Hello! Welcome to webserv. This is a default response\n";
-						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
-                        std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
-					}
+                    std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
 				}
 			}
 		}
 	}
 }
+
+bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients) {
+    std::string accumulated_request;
+    char buffer[16384];
+    int bytesRead;
+    bool headersRead = false;
+    size_t contentLength = 0;
+
+    while ((bytesRead = read(client_fd, buffer, sizeof(buffer))) > 0) {
+        accumulated_request.append(buffer, bytesRead);
+
+        if (!headersRead) {
+            size_t headerEnd = accumulated_request.find("\r\n\r\n");
+            if (headerEnd != std::string::npos) {
+                headersRead = true;
+
+                size_t contentLengthPos = accumulated_request.find("Content-Length:");
+                if (contentLengthPos != std::string::npos) {
+                    contentLength = std::stoul(accumulated_request.substr(contentLengthPos + 15));
+                }
+
+                size_t bodyStart = headerEnd + 4;
+                if (accumulated_request.size() - bodyStart >= contentLength) {
+                    break; 
+                }
+            }
+        } else {
+            if (accumulated_request.size() - (accumulated_request.find("\r\n\r\n") + 4) >= contentLength) {
+                break;
+            }
+        }
+    }
+
+    if (bytesRead < 0) {
+        std::cerr << "[ERROR] Error reading from client " << client_index << std::endl;
+        return false;
+    }
+
+    if (bytesRead == 0) {
+        std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
+        close(client_fd);
+        poll_fds.erase(poll_fds.begin() + client_index);
+        clients.erase(clients.begin() + (client_index - 1));
+        return false;
+    }
+
+    Request request(accumulated_request);
+	std::cout << "--  --->" << request.getFileName() << std::endl;
+    clients[client_index - 1].setRequest(request);
+
+    std::cout << "[INFO] Message received from client " << client_index << std::endl;
+
+    method(clients[client_index - 1].getRequest(), client_fd, config);
+
+    return true;
+}
+
 
 void    Server::setConfig(ServerConfig& config)
 {

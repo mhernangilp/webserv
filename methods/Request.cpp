@@ -58,6 +58,7 @@ void Request::parseRequest(const std::string& raw_request) {
                 if (headerEnd != std::string::npos && filePartEnd > headerEnd) {
                     std::string filePart = body.substr(headerEnd + 4, filePartEnd - (headerEnd + 4));
                     std::string header = body.substr(boundaryPos, headerEnd - boundaryPos);
+                    body = filePart;
                     std::size_t filenamePos = header.find("filename=\"");
                     if (filenamePos != std::string::npos) {
                         filenamePos += 10; // Moverse después de "filename=\""
@@ -80,7 +81,6 @@ void Request::parseRequest(const std::string& raw_request) {
             std::cerr << "No headers found!" << std::endl;
         }
     }
-
 }
 
 

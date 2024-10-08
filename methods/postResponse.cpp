@@ -225,10 +225,12 @@ void handle_post_request(int client_socket, std::string raw_request) {
 }
 
 
-void postResponse(std::string name, std::string body, int client_socket){
+void postResponse(Request request, int client_socket, const ServerConfig& serverConfig){
+
+    std::string body = request.getBody();
+    std::string name = request.getFileName();
     std::ofstream outFile("docs/kebab_web/gallery/" + name);
 
-    // Verificar si el archivo se abrió correctamente
     if (!outFile) {
         std::string response_body = getFileContent("docs/kebab_web/error_pages/500.html");
         if (response_body.empty())

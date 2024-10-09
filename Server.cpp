@@ -1,7 +1,4 @@
 #include "Server.hpp"
-#include <cstring>
-#include <netdb.h>
-#include <arpa/inet.h>
 
 Server::Server() {}
 
@@ -88,7 +85,7 @@ void Server::start(const ServerConfig& config) {
                     Client new_client;
                     this->clients.push_back(new_client);
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(poll_fds[i].fd, i, poll_fds, clients);
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
 					if (!clientConnected)
 						i--;
                     std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
@@ -105,7 +102,31 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     bool headersRead = false;
     size_t contentLength = 0;
 
-    while ((bytesRead = read(client_fd, buffer, sizeof(buffer))) > 0) {
+    while (true) {
+        bytesRead = read(client_fd, buffer, 16384);
+
+        if (bytesRead < 0) {
+            if (errno == EINTR) {
+                // La lectura fue interrumpida por una señal, intenta de nuevo
+                continue;
+            } else {
+                std::cerr << "[ERROR] Error reading from client " << client_index << ": " << strerror(errno) << std::endl;
+                close(client_fd);
+                poll_fds.erase(poll_fds.begin() + client_index);
+                clients.erase(clients.begin() + (client_index - 1));
+                return false;
+            }
+        }
+
+        if (bytesRead == 0) {
+            // El cliente se ha desconectado
+            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
+            close(client_fd);
+            poll_fds.erase(poll_fds.begin() + client_index);
+            clients.erase(clients.begin() + (client_index - 1));
+            return false; // Client disconnected
+        }
+
         accumulated_request.append(buffer, bytesRead);
 
         if (!headersRead) {
@@ -113,34 +134,24 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             if (headerEnd != std::string::npos) {
                 headersRead = true;
 
+                // Verificar la posición de Content-Length
                 size_t contentLengthPos = accumulated_request.find("Content-Length:");
                 if (contentLengthPos != std::string::npos) {
-                    contentLength = std::stoul(accumulated_request.substr(contentLengthPos + 15));
+                    contentLength = std::strtoul(accumulated_request.substr(contentLengthPos + 15).c_str(), NULL, 10);
                 }
 
-                size_t bodyStart = headerEnd + 4;
+                size_t bodyStart = headerEnd + 4; // 4 bytes para saltar "\r\n\r\n"
+                // Comprueba si hemos leído el cuerpo completo
                 if (accumulated_request.size() - bodyStart >= contentLength) {
                     break; 
                 }
             }
-        } else {
-            if (accumulated_request.size() - (accumulated_request.find("\r\n\r\n") + 4) >= contentLength) {
-                break;
+        } else { // Si ya hemos leído los encabezados
+            size_t bodyStart = accumulated_request.find("\r\n\r\n") + 4;
+            if (accumulated_request.size() - bodyStart >= contentLength) {
+                break; // Si ya tenemos el cuerpo completo
             }
         }
-    }
-
-    if (bytesRead < 0) {
-        std::cerr << "[ERROR] Error reading from client " << client_index << std::endl;
-        return false;
-    }
-
-    if (bytesRead == 0) {
-        std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
-        close(client_fd);
-        poll_fds.erase(poll_fds.begin() + client_index);
-        clients.erase(clients.begin() + (client_index - 1));
-        return false;
     }
 
     Request request(accumulated_request);
@@ -152,7 +163,6 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
 
     return true;
 }
-
 
 void    Server::setConfig(ServerConfig& config)
 {

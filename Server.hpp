@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <string>
 #include <iostream>
 #include <poll.h>
 #include <vector>
@@ -11,6 +12,10 @@
 #include <cerrno>
 #include "Client.hpp"
 #include "config/ServerConfig.hpp"
+#include <cstring>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <cstdlib>
 
 #define RESET      "\033[0m"
 #define RED        "\033[31m"

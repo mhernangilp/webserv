@@ -60,7 +60,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         file_index++;
     }
 
-    std::ofstream outFile(full_path);
+    std::ofstream outFile(full_path.c_str());
     if (!outFile) {
         std::string response_body = getFileContent("docs/kebab_web/error_pages/500.html");
         if (response_body.empty())

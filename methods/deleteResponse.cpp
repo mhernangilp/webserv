@@ -25,7 +25,7 @@ void try_delete(std::string url, int client_socket) {
 
 
 void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
-    std::string newUrl;
+    std::string newUrl = url;
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
 

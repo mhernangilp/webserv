@@ -10,7 +10,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
     std::string body = request.getBody();
     std::string name = request.getFileName();
 
-     std::string newUrl;
+    std::string newUrl = request.getUrl();
     if (access(request.getUrl().c_str(), F_OK) == -1)
         newUrl = urlDecode(request.getUrl());
     if (!serverConfig.isDeleteAllowed(newUrl)) {

@@ -117,27 +117,16 @@ std::string removeDuplicateSlashes(const std::string& path) {
 void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
-    std::string newUrl;
+    std::string newUrl = url;
     
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
-    else
-        newUrl = url;
 
     if (!serverConfig.isGetAllowed(newUrl)) {
-        std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
-        std::string body = getFileContent(notFoundPagePath);
-
-        if (body.empty())
-            body = "<html><body><h1>405 Method Not Allowed</h1><p>GET is not allowed in this ubication.</p></body></html>";
-        std::string response = 
-        "HTTP/1.1 405 Method Not Allowed\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: " + convertToString(body.size()) + "\r\n" "\r\n"
-        "Connection: close\r\n"
-        "\r\n" +
-        body;
-        send(client_socket, response.c_str(), response.size(), 0);
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/405.html");
+        if (response_body.empty())
+            response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
+        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
         close(client_socket);
         return;
     }

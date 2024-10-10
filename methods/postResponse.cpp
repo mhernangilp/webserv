@@ -1,88 +1,77 @@
 #include "method.hpp"
-#include <sys/stat.h>
-#include <unistd.h>
-#include <algorithm> // Para std::replace
 
-void HttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
-    // Construir la respuesta HTTP
-    std::string response = 
-        "HTTP/1.1 " + statusCode + "\r\n" +
-        "Content-Type: " + contentType + "\r\n" +
-        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
-        "Connection: close\r\n" + // Cerrar conexión después de la respuesta
-        "\r\n" + // Línea en blanco que separa headers del cuerpo
-        body; // Cuerpo de la respuesta
-    
-    // Enviar la respuesta al socket del cliente
-    ssize_t sent_bytes = send(client_socket, response.c_str(), response.size(), 0);
-    if (sent_bytes < 0) {
-        std::cerr << "Error sending response: " << strerror(errno) << std::endl; // Manejo de errores en el envío
-    }
+bool fileExists(const std::string& filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
 }
 
-void postResponse(int client_socket, Request request) {
-    std::string content_type = request.getHeaders()["Content-Type"];
-    
-    if (content_type.find("multipart/form-data") != std::string::npos) {
-        // Extraer el boundary
-        std::string boundary = "--" + content_type.substr(content_type.find("boundary=") + 9);
-        boundary = boundary.substr(0, boundary.find(";")); // Extrae el límite si tiene ";" al final
+void postResponse(Request request, int client_socket, const ServerConfig& serverConfig){
 
-        // Maneja el contenido multipart
-        std::string body = request.getBody();
-        std::size_t pos = 0;
+    std::string body = request.getBody();
+    std::string name = request.getFileName();
 
-        // Asegurarse de que la carpeta existe
-        std::string gallery_path = "docs/kebab_web/gallery";
-        mkdir(gallery_path.c_str(), 0777); // Crear la carpeta si no existe
-
-        // Iterar sobre cada parte del multipart
-        while ((pos = body.find(boundary, pos)) != std::string::npos) {
-            pos += boundary.length();
-            std::size_t end_pos = body.find(boundary, pos);
-            if (end_pos == std::string::npos) break;
-            std::string part = body.substr(pos, end_pos - pos);
-            pos = end_pos; // Moverse a la siguiente parte
-
-            // Busca el campo "Content-Disposition"
-            std::size_t content_disposition_pos = part.find("Content-Disposition: ");
-            if (content_disposition_pos != std::string::npos) {
-                std::size_t filename_pos = part.find("filename=\"");
-                if (filename_pos != std::string::npos) {
-                    // Extraer el nombre del archivo
-                    filename_pos += 10; // Longitud de 'filename="'
-                    std::size_t filename_end_pos = part.find("\"", filename_pos);
-                    std::string filename = part.substr(filename_pos, filename_end_pos - filename_pos);
-
-                    // Limpiar el nombre del archivo
-                    std::replace(filename.begin(), filename.end(), '/', '_'); // Reemplaza '/' por '_'
-                    std::replace(filename.begin(), filename.end(), '\\', '_'); // Reemplaza '\' por '_'
-
-                    // Encontrar el contenido del archivo
-                    std::size_t file_content_pos = part.find("\r\n\r\n") + 4; // Salto después de los headers
-                    std::size_t file_content_end = part.rfind("\r\n");
-                    std::string file_content = part.substr(file_content_pos, file_content_end - file_content_pos);
-
-                    // Guardar el archivo en binario
-                    std::string file_path = gallery_path + "/" + filename; // Define tu ruta
-                    std::ofstream file(file_path, std::ios::binary);
-                    if (file) {
-                        file.write(file_content.c_str(), file_content.length());
-                        file.close();
-                        std::cout << "Archivo guardado: " << file_path << std::endl;
-                    } else {
-                        std::cerr << "No se pudo abrir el archivo para escribir: " << file_path << std::endl;
-                    }
-                }
-            }
-        }
-
-        // Enviar respuesta de éxito
-        std::string bodyResponse = "File uploaded successfully!";
-        HttpResponse(client_socket, "200 OK", "text/plain", bodyResponse);
-    } else {
-        // Manejar otros tipos de contenido, por ejemplo, application/x-www-form-urlencoded
-        std::string bodyResponse = "Unsupported content type!";
-        HttpResponse(client_socket, "400 Bad Request", "text/plain", bodyResponse);
+    std::string newUrl = request.getUrl();
+    if (access(request.getUrl().c_str(), F_OK) == -1)
+        newUrl = urlDecode(request.getUrl());
+    if (!serverConfig.isDeleteAllowed(newUrl)) {
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/405.html");
+        if (response_body.empty())
+            response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
+        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
+        close(client_socket);
+        return;
     }
+    if (request.getCode() == 400){
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
+        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        return;
+    }
+    else if (request.getCode() == 401){
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No header specified.</p></body></html>";
+        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        return;
+    }
+    else if (request.getCode() == 415){
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No boundary specified.</p></body></html>";
+        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        return;
+    }
+
+    std::string full_path = "docs/kebab_web/gallery/" + name;
+    std::string base_name = name;
+    std::string extension = "";
+    // Separar el nombre base y la extensión si tiene.
+    size_t dot_pos = name.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+        base_name = name.substr(0, dot_pos);
+        extension = name.substr(dot_pos);
+    }
+    int file_index = 1;
+    while (fileExists(full_path)) {
+        std::ostringstream new_filename;
+        new_filename << base_name << "(" << file_index << ")" << extension;
+        full_path = "docs/kebab_web/gallery/" + new_filename.str();
+        file_index++;
+    }
+
+    std::ofstream outFile(full_path.c_str());
+    if (!outFile) {
+        std::string response_body = getFileContent("docs/kebab_web/error_pages/500.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        return; 
+    } else{
+        outFile << body;
+        outFile.close();
+        std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
+        sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+    }
+    close (client_socket);
 }

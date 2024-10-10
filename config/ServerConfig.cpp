@@ -90,3 +90,20 @@ bool ServerConfig::isGetAllowed(const std::string& url) const {
     }
     return false;
 }
+
+bool ServerConfig::isPostAllowed(const std::string& url) const {
+    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::string& path = it->first;
+        const LocationConfig& locationConfig = it->second;
+
+        if (url.find(path) == 0) {
+            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
+            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
+                if (*methodIt == "POST") {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}

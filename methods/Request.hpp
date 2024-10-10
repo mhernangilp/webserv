@@ -12,12 +12,14 @@
 
 class Request {
     private:
-        std::string method;                  // Método HTTP (GET, POST, etc.)
-        std::string url;                     // URL solicitada
-        std::string http_version;            // Versión HTTP (ej. HTTP/1.1)
-        std::string host;                    // Host (campo "Host" en los headers)
-        std::map<std::string, std::string> headers; // Headers HTTP (otros campos como User-Agent, etc.)
-        std::string body;                    // Cuerpo del mensaje (si hay uno)
+        std::string method;
+        std::string url;
+        std::string http_version;
+        std::string host;
+        std::map<std::string, std::string> headers;
+        std::string body;
+        std::string file_name;
+        int code;
 
     public:
     Request();
@@ -29,8 +31,8 @@ class Request {
         std::string getHost() const;
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
-
-        void parseChunkedBody(std::istringstream& stream);
+        std::string getFileName() const;
+        int getCode();
 
     private:
         void parseRequest(const std::string& raw_request);

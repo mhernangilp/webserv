@@ -15,7 +15,7 @@ void method(Request request, int socket, const ServerConfig& serverConfig){
 	if (request.getMethod() == "DELETE")
 		deleteResponse(request.getUrl(), socket, serverConfig);
 	if (request.getMethod() == "POST")
-		postResponse(socket, request);
+		postResponse(request, socket, serverConfig);
 }
 
 std::string getFileContent(const std::string& filePath) {
@@ -53,4 +53,52 @@ std::string urlDecode(const std::string& url) {
         }
     }
     return decoded.str();
+}
+
+bool isDirectory(const std::string& path) {
+    struct stat pathStat;
+    stat(path.c_str(), &pathStat);
+    return S_ISDIR(pathStat.st_mode);
+}
+
+int checkdir(const std::string& url, int client_socket) {
+    DIR* dir = opendir(url.c_str());
+    if (dir != NULL) {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != NULL) {
+            std::string fileName = entry->d_name;
+
+            if (fileName != "." && fileName != "..") {
+                std::string fullPath = url + "/" + fileName;
+
+                if (isDirectory(fullPath)) {
+                    checkdir(fullPath, client_socket);
+                    if (rmdir(fullPath.c_str()) != 0) {
+                        std::cerr << "Error eliminando el directorio: " << fullPath << std::endl;
+                    }
+                } else {
+                    if (remove(fullPath.c_str()) != 0) {
+                        std::cerr << "Error eliminando el archivo: " << fullPath << std::endl;
+                    }
+                }
+            }
+        }
+        closedir(dir);
+        if (rmdir(url.c_str()) != 0) {
+            std::cerr << "Error eliminando el directorio: " << url << std::endl;
+            return (1);
+        }
+    }
+    return (0);
+}
+
+void sendHttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
+    std::string response = 
+        "HTTP/1.1 " + statusCode + "\r\n"
+        "Content-Type: " + contentType + "\r\n"
+        "Content-Length: " + convertToString(body.size()) + "\r\n"
+        "Connection: close\r\n"
+        "\r\n" + body;
+    
+    send(client_socket, response.c_str(), response.size(), 0);
 }

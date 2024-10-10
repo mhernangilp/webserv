@@ -1,7 +1,4 @@
 #include "Server.hpp"
-#include <cstring>
-#include <netdb.h>
-#include <arpa/inet.h>
 
 Server::Server() {}
 
@@ -88,31 +85,83 @@ void Server::start(const ServerConfig& config) {
                     Client new_client;
                     this->clients.push_back(new_client);
 				} else { // Read data from the client
-					char buffer[1024] = {0};
-					int bytesRead = read(this->poll_fds[i].fd, buffer, 1024);
-					if (bytesRead <= 0) { // If there is no data or the connection is closed
-						std::cout << LIGHT_BLUE <<"[INFO] Client " << i << " Disconnected, Closing Connection ..." << RESET << std::endl;
-						close(this->poll_fds[i].fd);
-						this->poll_fds.erase(this->poll_fds.begin() + i);
-                        this->clients.erase(this->clients.begin() + (i - 1));
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
+					if (!clientConnected)
 						i--;
-					} else {
-						std::string raw_request(buffer, bytesRead);
-                        Request request(raw_request);
-						clients[i - 1].setRequest(request);
-                        std::cout << BLUE <<"\n[INFO] Message received from client " << i << RESET << std::endl;
-
-						method(clients[i - 1].getRequest(), this->poll_fds[i].fd, config);
-
-						// Send a response to the client
-                        //std::string response = "Hello! Welcome to webserv. This is a default response\n";
-						//send(this->poll_fds[i].fd, response.c_str(), response.size(), 0);
-                        std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
-					}
+                    std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
 				}
 			}
 		}
 	}
+}
+
+bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients) {
+    std::string accumulated_request;
+    char buffer[16384];
+    int bytesRead;
+    bool headersRead = false;
+    size_t contentLength = 0;
+
+    while (true) {
+        bytesRead = read(client_fd, buffer, 16384);
+
+        if (bytesRead < 0) {
+            if (errno == EINTR) {
+                // La lectura fue interrumpida por una señal, intenta de nuevo
+                continue;
+            } else {
+                std::cerr << "[ERROR] Error reading from client " << client_index << ": " << strerror(errno) << std::endl;
+                close(client_fd);
+                poll_fds.erase(poll_fds.begin() + client_index);
+                clients.erase(clients.begin() + (client_index - 1));
+                return false;
+            }
+        }
+
+        if (bytesRead == 0) {
+            // El cliente se ha desconectado
+            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
+            close(client_fd);
+            poll_fds.erase(poll_fds.begin() + client_index);
+            clients.erase(clients.begin() + (client_index - 1));
+            return false; // Client disconnected
+        }
+
+        accumulated_request.append(buffer, bytesRead);
+
+        if (!headersRead) {
+            size_t headerEnd = accumulated_request.find("\r\n\r\n");
+            if (headerEnd != std::string::npos) {
+                headersRead = true;
+
+                // Verificar la posición de Content-Length
+                size_t contentLengthPos = accumulated_request.find("Content-Length:");
+                if (contentLengthPos != std::string::npos) {
+                    contentLength = std::strtoul(accumulated_request.substr(contentLengthPos + 15).c_str(), NULL, 10);
+                }
+
+                size_t bodyStart = headerEnd + 4; // 4 bytes para saltar "\r\n\r\n"
+                // Comprueba si hemos leído el cuerpo completo
+                if (accumulated_request.size() - bodyStart >= contentLength) {
+                    break; 
+                }
+            }
+        } else { // Si ya hemos leído los encabezados
+            size_t bodyStart = accumulated_request.find("\r\n\r\n") + 4;
+            if (accumulated_request.size() - bodyStart >= contentLength) {
+                break; // Si ya tenemos el cuerpo completo
+            }
+        }
+    }
+
+    Request request(accumulated_request);
+    clients[client_index - 1].setRequest(request);
+
+    std::cout << "[INFO] Message received from client " << client_index << std::endl;
+
+    method(clients[client_index - 1].getRequest(), client_fd, config);
+
+    return true;
 }
 
 void    Server::setConfig(ServerConfig& config)

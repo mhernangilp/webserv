@@ -70,7 +70,9 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
     } else{
         outFile << body;
         outFile.close();
-        std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
+        std::string response_body = getFileContent("docs/kebab_web/upload/upload_done.html");
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
         sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
     }
     close (client_socket);

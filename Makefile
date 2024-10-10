@@ -27,7 +27,8 @@ SRCS = webserv.cpp Server.cpp Client.cpp methods/method.cpp methods/Request.cpp 
 #####################
 
 %.o: %.cpp
-	@${CC} ${CFLAGS} -c $< -o $@
+	@echo "$(GREEN)[OK]$(NOC)" "\c"
+	${CC} ${CFLAGS} -c $< -o $@
 
 OBJS = ${SRCS:.cpp=.o}
 

@@ -1,4 +1,5 @@
 #include "method.hpp"
+#include "../Server.hpp"
 
 void method(Request request, int socket, const ServerConfig& serverConfig){
 	std::cout << "----------------------------------------------" << std::endl;
@@ -11,11 +12,13 @@ void method(Request request, int socket, const ServerConfig& serverConfig){
 	std::cout << "----------------------------------------------" << std::endl;
 						
 	if (request.getMethod() == "GET")
-		getResponse(request.getUrl(), socket, serverConfig);
+		getResponse(request, socket, serverConfig);
 	if (request.getMethod() == "DELETE")
-		deleteResponse(request.getUrl(), socket, serverConfig);
+		deleteResponse(request, socket, serverConfig);
 	if (request.getMethod() == "POST")
 		postResponse(request, socket, serverConfig);
+
+    std::cout << BLUE << "[INFO] Response sent to socket " << socket << ", Stats " << request.getCode() << RESET << std::endl;
 }
 
 std::string getFileContent(const std::string& filePath) {

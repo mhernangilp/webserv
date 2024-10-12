@@ -18,6 +18,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
+        request.setCode(405);
         close(client_socket);
         return;
     }
@@ -26,6 +27,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        request.setCode(400);
         return;
     }
     else if (request.getCode() == 401){
@@ -33,6 +35,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No header specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        request.setCode(400);
         return;
     }
     else if (request.getCode() == 415){
@@ -40,6 +43,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No boundary specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        request.setCode(400);
         return;
     }
 
@@ -66,6 +70,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
         sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        request.setCode(500);
         return; 
     } else{
         outFile << body;
@@ -74,6 +79,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         if (response_body.empty())
             std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
         sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+        request.setCode(200);
     }
     close (client_socket);
 }

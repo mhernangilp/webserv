@@ -98,3 +98,4 @@ std::map<std::string, std::string> Request::getHeaders() const { return headers;
 std::string Request::getBody() const { return body; }
 std::string Request::getFileName() const { return file_name; }
 int Request::getCode() { return code; }
+void Request::setCode(int code) { this->code = code; }

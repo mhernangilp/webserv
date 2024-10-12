@@ -114,9 +114,10 @@ std::string removeDuplicateSlashes(const std::string& path) {
 }
 
 
-void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig) {
+void getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
+    const std::string& url = request.getUrl();
     std::string newUrl = url;
     
     if (access(url.c_str(), F_OK) == -1)
@@ -127,6 +128,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
+        request.setCode(405);
         close(client_socket);
         return;
     }
@@ -162,6 +164,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 "Connection: close\r\n"
                 "\r\n" + forbiddenPageContent;
             send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
+            request.setCode(403);
         } else if (indexContent.empty() && autoindex_allowed(filePath, serverConfig)) {
             // Si no hay un archivo index.html pero el autoindex está habilitado, generar el autoindex
             std::string autoIndexContent = generateAutoIndexPage(filePath, url);
@@ -172,6 +175,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 "Connection: close\r\n"
                 "\r\n" + autoIndexContent;
             send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
+            request.setCode(200);
         } else {
             // Si existe el index.html, devolverlo
             std::string httpResponse =
@@ -181,6 +185,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 "Connection: close\r\n"
                 "\r\n" + indexContent;
             send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
+            request.setCode(200);
         }
     } else {
         // Si no es un directorio, intentar devolver el archivo solicitado
@@ -201,6 +206,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                     "\r\n" +
                     notFoundPageContent;
                 send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+                request.setCode(404);
             } else {
                 std::string notFoundResponse = 
                     "HTTP/1.1 404 Not Found\r\n"
@@ -209,6 +215,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                     "Connection: close\r\n"
                     "\r\n" + notFoundPageContent;
                 send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+                request.setCode(404);
             }
         } else {
             // Si se encuentra el archivo solicitado, devolver su contenido con un código 200 OK
@@ -219,6 +226,7 @@ void getResponse(const std::string& url, int client_socket, const ServerConfig& 
                 "Connection: close\r\n"
                 "\r\n" + fileContent;
             send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
+            request.setCode(200);
         }
     }
     close (client_socket);

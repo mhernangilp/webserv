@@ -88,7 +88,6 @@ void Server::start(const ServerConfig& config) {
 					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
 					if (!clientConnected)
 						i--;
-                    std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
 				}
 			}
 		}
@@ -157,7 +156,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     Request request(accumulated_request);
     clients[client_index - 1].setRequest(request);
 
-    std::cout << "[INFO] Message received from client " << client_index << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_fd  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
     method(clients[client_index - 1].getRequest(), client_fd, config);
 

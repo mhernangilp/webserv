@@ -7,8 +7,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-void getResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
-void deleteResponse(const std::string& url, int client_socket, const ServerConfig& serverConfig);
+void getResponse(Request request, int client_socket, const ServerConfig& serverConfig);
+void deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig);
 void postResponse(Request request, int client_socket, const ServerConfig& serverConfig);
 
 std::string convertToString(int number);

@@ -5,7 +5,7 @@ bool fileExists(const std::string& filename) {
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
-void postResponse(Request request, int client_socket, const ServerConfig& serverConfig){
+int postResponse(Request request, int client_socket, const ServerConfig& serverConfig){
 
     std::string body = request.getBody();
     std::string name = request.getFileName();
@@ -20,7 +20,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
         request.setCode(405);
         close(client_socket);
-        return;
+        return (405);
     }
     if (request.getCode() == 400){
         std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
@@ -28,7 +28,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
         request.setCode(400);
-        return;
+        return (400);
     }
     else if (request.getCode() == 401){
         std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
@@ -36,7 +36,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No header specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
         request.setCode(400);
-        return;
+        return (400);
     }
     else if (request.getCode() == 415){
         std::string response_body = getFileContent("docs/kebab_web/error_pages/400.html");
@@ -44,7 +44,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No boundary specified.</p></body></html>";
         sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
         request.setCode(400);
-        return;
+        return (400);
     }
 
     std::string full_path = "docs/kebab_web/gallery/" + name;
@@ -71,7 +71,7 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
             std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
         sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
         request.setCode(500);
-        return; 
+        return (500); 
     } else{
         outFile << body;
         outFile.close();
@@ -82,4 +82,5 @@ void postResponse(Request request, int client_socket, const ServerConfig& server
         request.setCode(200);
     }
     close (client_socket);
+    return (request.getCode());
 }

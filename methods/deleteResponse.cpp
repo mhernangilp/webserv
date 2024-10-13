@@ -28,7 +28,7 @@ void try_delete(std::string url, int client_socket, Request reqquest) {
 
 
 
-void deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
+int deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     const std::string& url = request.getUrl();
     std::string newUrl = url;
     if (access(url.c_str(), F_OK) == -1)
@@ -42,7 +42,7 @@ void deleteResponse(Request request, int client_socket, const ServerConfig& serv
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", body);
         request.setCode(405);
         close(client_socket);
-        return;
+        return (405);
     }
 
     newUrl = serverConfig.root + newUrl;
@@ -60,4 +60,5 @@ void deleteResponse(Request request, int client_socket, const ServerConfig& serv
         request.setCode(404);
     }
     close(client_socket);
+    return (request.getCode());
 }

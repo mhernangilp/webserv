@@ -105,16 +105,10 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
         bytesRead = read(client_fd, buffer, 16384);
 
         if (bytesRead < 0) {
-            if (errno == EINTR) {
-                // La lectura fue interrumpida por una señal, intenta de nuevo
-                continue;
-            } else {
-                std::cerr << "[ERROR] Error reading from client " << client_index << ": " << strerror(errno) << std::endl;
-                close(client_fd);
-                poll_fds.erase(poll_fds.begin() + client_index);
-                clients.erase(clients.begin() + (client_index - 1));
-                return false;
-            }
+            close(client_fd);
+            poll_fds.erase(poll_fds.begin() + client_index);
+            clients.erase(clients.begin() + (client_index - 1));
+            return false;
         }
 
         if (bytesRead == 0) {
@@ -123,7 +117,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             close(client_fd);
             poll_fds.erase(poll_fds.begin() + client_index);
             clients.erase(clients.begin() + (client_index - 1));
-            return false; // Client disconnected
+            return false;
         }
 
         accumulated_request.append(buffer, bytesRead);

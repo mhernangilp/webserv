@@ -7,9 +7,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-void getResponse(Request request, int client_socket, const ServerConfig& serverConfig);
-void deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig);
-void postResponse(Request request, int client_socket, const ServerConfig& serverConfig);
+int getResponse(Request request, int client_socket, const ServerConfig& serverConfig);
+int deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig);
+int postResponse(Request request, int client_socket, const ServerConfig& serverConfig);
 
 std::string convertToString(int number);
 std::string getFileContent(const std::string& filePath);

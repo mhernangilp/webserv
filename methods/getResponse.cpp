@@ -114,7 +114,7 @@ std::string removeDuplicateSlashes(const std::string& path) {
 }
 
 
-void getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
+int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
     const std::string& url = request.getUrl();
@@ -130,7 +130,7 @@ void getResponse(Request request, int client_socket, const ServerConfig& serverC
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
         request.setCode(405);
         close(client_socket);
-        return;
+        return (405);
     }
 
     if (newUrl == "/") {
@@ -230,4 +230,5 @@ void getResponse(Request request, int client_socket, const ServerConfig& serverC
         }
     }
     close (client_socket);
+    return (request.getCode());
 }

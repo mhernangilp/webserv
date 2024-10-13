@@ -88,7 +88,6 @@ void Server::start(const ServerConfig& config) {
 					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
 					if (!clientConnected)
 						i--;
-                    std::cout << BLUE << "[INFO] Response sent!" << RESET << std::endl;
 				}
 			}
 		}
@@ -106,16 +105,10 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
         bytesRead = read(client_fd, buffer, 16384);
 
         if (bytesRead < 0) {
-            if (errno == EINTR) {
-                // La lectura fue interrumpida por una señal, intenta de nuevo
-                continue;
-            } else {
-                std::cerr << "[ERROR] Error reading from client " << client_index << ": " << strerror(errno) << std::endl;
-                close(client_fd);
-                poll_fds.erase(poll_fds.begin() + client_index);
-                clients.erase(clients.begin() + (client_index - 1));
-                return false;
-            }
+            close(client_fd);
+            poll_fds.erase(poll_fds.begin() + client_index);
+            clients.erase(clients.begin() + (client_index - 1));
+            return false;
         }
 
         if (bytesRead == 0) {
@@ -124,7 +117,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             close(client_fd);
             poll_fds.erase(poll_fds.begin() + client_index);
             clients.erase(clients.begin() + (client_index - 1));
-            return false; // Client disconnected
+            return false;
         }
 
         accumulated_request.append(buffer, bytesRead);
@@ -157,7 +150,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     Request request(accumulated_request);
     clients[client_index - 1].setRequest(request);
 
-    std::cout << "[INFO] Message received from client " << client_index << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_fd  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
     method(clients[client_index - 1].getRequest(), client_fd, config);
 

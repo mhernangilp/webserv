@@ -1,21 +1,18 @@
 #include "method.hpp"
+#include "../Server.hpp"
 
 void method(Request request, int socket, const ServerConfig& serverConfig){
-	std::cout << "----------------------------------------------" << std::endl;
-	std::cout << request.getMethod() << std::endl;
-	std::cout << request.getUrl() << std::endl;
-	std::cout << request.getHttpVersion() << std::endl;
-	std::cout << request.getHost() << std::endl;
-	std::cout << request.getHeaders()["User-Agent"] << std::endl;
-	std::cout << request.getBody() << std::endl;
-	std::cout << "----------------------------------------------" << std::endl;
-						
-	if (request.getMethod() == "GET")
-		getResponse(request.getUrl(), socket, serverConfig);
-	if (request.getMethod() == "DELETE")
-		deleteResponse(request.getUrl(), socket, serverConfig);
-	if (request.getMethod() == "POST")
-		postResponse(request, socket, serverConfig);
+    if (request.getMethod() == "GET" || request.getMethod() == "DELETE" || request.getMethod() == "POST"){
+        int code = 0;			
+        if (request.getMethod() == "GET")
+            code = getResponse(request, socket, serverConfig);
+        else if (request.getMethod() == "DELETE")
+            code = deleteResponse(request, socket, serverConfig);
+        else if (request.getMethod() == "POST")
+            code = postResponse(request, socket, serverConfig);
+
+        std::cout << BLUE << "[INFO] Response sent to socket " << socket << ", Stats " << code << RESET << std::endl;
+    }
 }
 
 std::string getFileContent(const std::string& filePath) {

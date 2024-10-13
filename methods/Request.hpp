@@ -33,6 +33,7 @@ class Request {
         std::string getBody() const;
         std::string getFileName() const;
         int getCode();
+        void setCode(int code);
 
     private:
         void parseRequest(const std::string& raw_request);

@@ -54,6 +54,7 @@ void Server::start(const ServerConfig& config) {
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
+    int ident = 1;
     while (1) {
 
 		if (j++ >= 400000)
@@ -75,7 +76,7 @@ void Server::start(const ServerConfig& config) {
 						exit(EXIT_FAILURE);
 					}
 
-					std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << this->poll_fds.size() << RESET << std::endl;
+					std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << ident++ << RESET << std::endl;
 
 					// Add the new client socket to poll
 					pollfd new_client_pollfd;

@@ -40,7 +40,7 @@ class Server {
 
         void    start(const ServerConfig& config);
         void    setConfig(ServerConfig& config);
-        bool processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, int ident);
+        bool processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

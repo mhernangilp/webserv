@@ -54,7 +54,6 @@ void Server::start(const ServerConfig& config) {
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
-    int ident = 1;
     while (1) {
 
 		if (j++ >= 400000)
@@ -84,20 +83,17 @@ void Server::start(const ServerConfig& config) {
                     Client new_client;
                     this->clients.push_back(new_client);
 
-                    
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients, ident);
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
 					if (!clientConnected)
 						i--;
-                    else
-                        ident++;
 				}
 			}
 		}
 	}
 }
 
-bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, int ident) {
+bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -123,7 +119,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             return false;
         }
 
-        std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << ident << RESET << std::endl;
+        std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << client_fd << RESET << std::endl;
         accumulated_request.append(buffer, bytesRead);
 
         if (!headersRead) {

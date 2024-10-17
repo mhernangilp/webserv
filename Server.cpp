@@ -76,8 +76,6 @@ void Server::start(const ServerConfig& config) {
 						exit(EXIT_FAILURE);
 					}
 
-					std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << ident++ << RESET << std::endl;
-
 					// Add the new client socket to poll
 					pollfd new_client_pollfd;
 					new_client_pollfd.fd = connection;
@@ -85,17 +83,21 @@ void Server::start(const ServerConfig& config) {
 					this->poll_fds.push_back(new_client_pollfd);
                     Client new_client;
                     this->clients.push_back(new_client);
+
+                    
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients, ident);
 					if (!clientConnected)
 						i--;
+                    else
+                        ident++;
 				}
 			}
 		}
 	}
 }
 
-bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients) {
+bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, int ident) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -121,6 +123,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             return false;
         }
 
+        std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << ident << RESET << std::endl;
         accumulated_request.append(buffer, bytesRead);
 
         if (!headersRead) {

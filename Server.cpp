@@ -50,7 +50,6 @@ void Server::start(const ServerConfig& config) {
 	this->poll_fds.push_back(main_socket_pollfd);
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
-
     while (1) {
 		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
 		if (poll_count < 0) {
@@ -77,7 +76,7 @@ void Server::start(const ServerConfig& config) {
                     this->clients.push_back(new_client);
 
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients);
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients, config);
 					if (!clientConnected)
 						i--;
 				}
@@ -86,7 +85,7 @@ void Server::start(const ServerConfig& config) {
 	}
 }
 
-bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients) {
+bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, const ServerConfig& configServer) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -145,7 +144,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
 
     std::cout << BLUE << "[INFO] Message received from client " << client_index  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    method(clients[client_index - 1].getRequest(), client_fd, config);
+    method(clients[client_index - 1].getRequest(), client_fd, client_index, configServer);
 
     return true;
 }

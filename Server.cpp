@@ -22,7 +22,6 @@ void Server::start(const ServerConfig& config) {
     
     // Configurar la dirección IP
     if (inet_pton(AF_INET, config.host.c_str(), &sockaddr.sin_addr) <= 0) {
-        // Si la conversión a IP falla, intentar como un nombre de host
         struct hostent* he = gethostbyname(config.host.c_str());
         if (he == NULL) {
             std::cerr << RED << "Error. Invalid host: " << config.host << RESET << std::endl;
@@ -53,13 +52,13 @@ void Server::start(const ServerConfig& config) {
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
-    std::vector<pollfd> new_poll_fds;
-
-    for (std::vector<ClientManager*>::iterator it = clientManagers.begin(); it != clientManagers.end(); ++it) {
-        new_poll_fds.push_back((*it)->poll_fd);  // Extraer el pollfd de cada ClientManager*
-    }
-
     while (1) {
+        // **Actualizar new_poll_fds cada ciclo**.
+        std::vector<pollfd> new_poll_fds;
+        for (std::vector<ClientManager*>::iterator it = clientManagers.begin(); it != clientManagers.end(); ++it) {
+            new_poll_fds.push_back((*it)->poll_fd);
+        }
+
 		int poll_count = poll(new_poll_fds.data(), new_poll_fds.size(), -1);
 		if (poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;

@@ -5,9 +5,6 @@ Server::Server() {}
 Server::~Server() {}
 
 void Server::start(const ServerConfig& config) {
-	const char spinner[] = {'/', '-', '\\', '|'};
-	int j = 0;
-
 	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
 
     // Create the socket
@@ -55,11 +52,6 @@ void Server::start(const ServerConfig& config) {
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
     while (1) {
-
-		if (j++ >= 400000)
-			j = 0;
-		std::cout << PURPLE <<"\r[INFO] Wating For Activity [" << spinner[j / 100000] << "]" << std::flush << RESET;
-
 		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
 		if (poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
@@ -76,6 +68,7 @@ void Server::start(const ServerConfig& config) {
 					}
 
 					// Add the new client socket to poll
+                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << poll_fds.size() << RESET << std::endl;
 					pollfd new_client_pollfd;
 					new_client_pollfd.fd = connection;
 					new_client_pollfd.events = POLLIN;
@@ -104,6 +97,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
         bytesRead = read(client_fd, buffer, 16384);
 
         if (bytesRead < 0) {
+            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
             poll_fds.erase(poll_fds.begin() + client_index);
             clients.erase(clients.begin() + (client_index - 1));
@@ -119,7 +113,6 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
             return false;
         }
 
-        std::cout << LIGHT_BLUE <<"\n[INFO] New Connection Accepted, Set Identifier " << client_fd << RESET << std::endl;
         accumulated_request.append(buffer, bytesRead);
 
         if (!headersRead) {
@@ -150,7 +143,7 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     Request request(accumulated_request);
     clients[client_index - 1].setRequest(request);
 
-    std::cout << BLUE << "[INFO] Message received from client " << client_fd  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_index  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
     method(clients[client_index - 1].getRequest(), client_fd, config);
 

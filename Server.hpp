@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <cstdlib>
+#include "ClientManager.hpp"
 
 #define RESET      "\033[0m"
 #define RED        "\033[31m"
@@ -30,9 +31,10 @@
 class Server {
     private:
         int sockfd;
-        std::vector<pollfd> poll_fds;
-        std::vector<Client> clients;
-        ServerConfig config;
+        int nextId;
+        ClientManager   clientManager;
+        std::set<int>   freeIds;
+        ServerConfig    config;
 
     public:
         Server();
@@ -40,7 +42,7 @@ class Server {
 
         void    start(const ServerConfig& config);
         void    setConfig(ServerConfig& config);
-        bool processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients);
+        bool processClientRequest(int client_fd, int client_index);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

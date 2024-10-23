@@ -8,11 +8,12 @@
 
 class ClientManager {
     public:
+        pollfd poll_fd;
+        Client client;
         int id;
-        std::vector<pollfd> poll_fds;
-        std::vector<Client> clients;
         
-        ClientManager();
+        ClientManager(pollfd& poll_fd, Client& client, int id);
+        ClientManager(pollfd& poll_fd, int id);
         ~ClientManager();
 };
 

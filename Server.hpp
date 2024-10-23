@@ -32,7 +32,7 @@ class Server {
     private:
         int sockfd;
         int nextId;
-        ClientManager   clientManager;
+        std::vector<ClientManager*>  clientManagers;
         std::set<int>   freeIds;
         ServerConfig    config;
 

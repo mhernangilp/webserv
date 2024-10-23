@@ -48,20 +48,27 @@ void Server::start(const ServerConfig& config) {
 	pollfd main_socket_pollfd;
 	main_socket_pollfd.fd = sockfd;
 	main_socket_pollfd.events = POLLIN;
-	clientManager.poll_fds.push_back(main_socket_pollfd);
+    ClientManager* clientManager = new ClientManager(main_socket_pollfd, nextId++);
+	clientManagers.push_back(clientManager);
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
 
+    std::vector<pollfd> new_poll_fds;
+
+    for (std::vector<ClientManager*>::iterator it = clientManagers.begin(); it != clientManagers.end(); ++it) {
+        new_poll_fds.push_back((*it)->poll_fd);  // Extraer el pollfd de cada ClientManager*
+    }
+
     while (1) {
-		int poll_count = poll(clientManager.poll_fds.data(), clientManager.poll_fds.size(), -1);
+		int poll_count = poll(new_poll_fds.data(), new_poll_fds.size(), -1);
 		if (poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
 		}
 
-		for (size_t i = 0; i < clientManager.poll_fds.size(); i++) {
-			if (clientManager.poll_fds[i].revents & POLLIN) { // Check if there is read activity
-				if (clientManager.poll_fds[i].fd == sockfd) { // New incoming connection
+		for (size_t i = 0; i < clientManagers.size(); i++) {
+			if (clientManagers[i]->poll_fd.revents & POLLIN) { // Check if there is read activity
+				if (clientManagers[i]->poll_fd.fd == sockfd) { // New incoming connection
 					int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
 					if (connection < 0) {
 						std::cerr << "[ERR] Failed to grab connection" << std::endl;
@@ -69,16 +76,16 @@ void Server::start(const ServerConfig& config) {
 					}
 
 					// Add the new client socket to poll
-                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << clientManager.poll_fds.size() << RESET << std::endl;
+                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << clientManagers.size() << RESET << std::endl;
 					pollfd new_client_pollfd;
 					new_client_pollfd.fd = connection;
 					new_client_pollfd.events = POLLIN;
-					clientManager.poll_fds.push_back(new_client_pollfd);
                     Client new_client;
-                    clientManager.clients.push_back(new_client);
+                    clientManager = new ClientManager(new_client_pollfd, new_client, nextId++);
+	                clientManagers.push_back(clientManager);
 
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(clientManager.poll_fds[i].fd, i);
+					bool clientConnected = processClientRequest(clientManagers[i]->poll_fd.fd, i);
 					if (!clientConnected)
 						i--;
 				}
@@ -97,20 +104,10 @@ bool Server::processClientRequest(int client_fd, int client_index) {
     while (true) {
         bytesRead = read(client_fd, buffer, 16384);
 
-        if (bytesRead < 0) {
+        if (bytesRead <= 0) {
             std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
-            clientManager.poll_fds.erase(clientManager.poll_fds.begin() + client_index);
-            clientManager.clients.erase(clientManager.clients.begin() + (client_index - 1));
-            return false;
-        }
-
-        if (bytesRead == 0) {
-            // El cliente se ha desconectado
-            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
-            close(client_fd);
-            clientManager.poll_fds.erase(clientManager.poll_fds.begin() + client_index);
-            clientManager.clients.erase(clientManager.clients.begin() + (client_index - 1));
+            clientManagers.erase(clientManagers.begin() + client_index);
             return false;
         }
 
@@ -142,11 +139,11 @@ bool Server::processClientRequest(int client_fd, int client_index) {
     }
 
     Request request(accumulated_request);
-    clientManager.clients[client_index - 1].setRequest(request);
+    clientManagers[client_index]->client.setRequest(request);
 
     std::cout << BLUE << "[INFO] Message received from client " << client_index  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    method(clientManager.clients[client_index - 1].getRequest(), client_fd, config);
+    method(clientManagers[client_index]->client.getRequest(), client_fd, config);
 
     return true;
 }

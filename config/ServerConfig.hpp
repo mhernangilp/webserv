@@ -13,14 +13,15 @@ public:
     std::string index;
     std::string root;
     std::map<std::string, LocationConfig> locations;
+    char** method_location;
+    char** methods;
 
     ServerConfig();
 
     void print() const;
     void addLocation(const std::string& path, const LocationConfig& location);
-    bool isDeleteAllowed(const std::string& url) const;
-    bool isGetAllowed(const std::string& url) const;
-    bool isPostAllowed(const std::string& url) const;
+    bool isMethodAllowed(const std::string& location, char m) const;
+    void struct_method_allowed();
 };
 
 #endif

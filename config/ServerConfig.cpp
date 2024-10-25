@@ -1,4 +1,7 @@
 #include "ServerConfig.hpp"
+#include <cstring>
+#
+
 
 ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
     error_page[404] = "custom_error/404.html";
@@ -57,53 +60,93 @@ void ServerConfig::addLocation(const std::string& path, const LocationConfig& lo
     locations[path] = location;
 }
 
-bool ServerConfig::isDeleteAllowed(const std::string& url) const {
-    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-        const std::string& path = it->first;
-        const LocationConfig& locationConfig = it->second;
+void ServerConfig::struct_method_allowed() {
 
-        if (url.find(path) == 0) {
-            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
-            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
-                if (*methodIt == "DELETE") {
-                    return true;
-                }
+    char** method_allowed = new char*[locations.size() + 1];
+    method_allowed[locations.size()] = NULL;
+
+    method_location = new char*[locations.size() + 1];
+    method_location[locations.size()] = NULL;
+
+    int i = 0;
+    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+        const std::vector<std::string>& allowed_methods = it->second.allow_methods;
+
+        std::string methods_str;
+        for (size_t j = 0; j < allowed_methods.size(); ++j) {
+            if (allowed_methods[j] == "GET") {
+                methods_str += 'G';
+            } else if (allowed_methods[j] == "POST") {
+                methods_str += 'P';
+            } else if (allowed_methods[j] == "DELETE") {
+                methods_str += 'D';
             }
         }
+
+        method_allowed[i] = new char[methods_str.size() + 1];
+        strcpy(method_allowed[i], methods_str.c_str());
+
+        method_location[i] = new char[it->first.size() + 1]; // Asignar memoria para la ubicación
+        strcpy(method_location[i], it->first.c_str()); // Copiar la ubicación
+
+        std::cout << "Methods Allowed: " << method_allowed[i] << " on location " << method_location[i] << std::endl;
+
+        ++i;
     }
-    return false;
+
+    methods = method_allowed;
 }
 
-bool ServerConfig::isGetAllowed(const std::string& url) const {
-    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-        const std::string& path = it->first;
-        const LocationConfig& locationConfig = it->second;
-
-        if (url.find(path) == 0) {
-            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
-            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
-                if (*methodIt == "GET") {
-                    return true;
-                }
-            }
+int findCharFromEnd(const std::string& str, char ch) {
+    for (int i = str.size() - 2; i >= 0; --i) {
+        if (str[i] == ch) {
+            return i;
         }
     }
-    return false;
+    return -1;
 }
 
-bool ServerConfig::isPostAllowed(const std::string& url) const {
-    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-        const std::string& path = it->first;
-        const LocationConfig& locationConfig = it->second;
 
-        if (url.find(path) == 0) {
-            const std::vector<std::string>& allowedMethods = locationConfig.allow_methods;
-            for (std::vector<std::string>::const_iterator methodIt = allowedMethods.begin(); methodIt != allowedMethods.end(); ++methodIt) {
-                if (*methodIt == "POST") {
-                    return true;
-                }
+bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
+
+    if (method_location == NULL || method_location[0] == NULL) {
+        return false;
+    }
+
+   for (int i = 0; method_location[i] != NULL; ++i) {
+        if (strcmp(method_location[i], "/") == 0){
+            std::string met = methods[i];
+            if (met.find(m) != std::string::npos) {
+                return true;
             }
         }
     }
-    return false;
+
+    for (int i = 0; method_location[i] != NULL; ++i) {
+
+        if (strcmp(method_location[i], location.c_str()) == 0) {
+            std::string met = methods[i];
+            
+            if (met.find(m) != std::string::npos) {
+                return true;
+            }
+            else 
+                return false;
+        }
+        else {
+            int dir = findCharFromEnd(location, '/');
+            std::string dir_location = location.substr(0, dir);
+            if (dir_location.size() == 0)
+                dir_location = "/";
+
+            if (strcmp(method_location[i], dir_location.c_str()) == 0) {
+                std::string met = methods[i];
+                if (met.find(m) != std::string::npos)
+                    return true;
+                else
+                    return false;
+            }
+        }
+    }
+    return true;
 }

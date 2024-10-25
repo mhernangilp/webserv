@@ -14,6 +14,7 @@ int main(int argc, char **argv)
 		return 2; 
 	ServerConfig config = parser.getServerConfig();
 	config.print();
+	config.struct_method_allowed();
 	server.start(config);
 	return (0);
 }

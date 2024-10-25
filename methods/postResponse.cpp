@@ -10,10 +10,11 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     std::string body = request.getBody();
     std::string name = request.getFileName();
 
-    std::string newUrl = request.getUrl();
+    std::string newUrl = serverConfig.host;
+    newUrl = request.getUrl();
     if (access(request.getUrl().c_str(), F_OK) == -1)
         newUrl = urlDecode(request.getUrl());
-    if (!serverConfig.isDeleteAllowed(newUrl)) {
+   if (!serverConfig.isMethodAllowed(newUrl, 'P')) {
         std::string response_body = getFileContent("docs/kebab_web/error_pages/405.html");
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";

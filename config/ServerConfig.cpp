@@ -1,5 +1,6 @@
 #include "ServerConfig.hpp"
 #include <cstring>
+#
 
 
 ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
@@ -60,22 +61,18 @@ void ServerConfig::addLocation(const std::string& path, const LocationConfig& lo
 }
 
 void ServerConfig::struct_method_allowed() {
-    // Crear un arreglo para las rutas
-    char** method_allowed = new char*[locations.size() + 1];
-    method_allowed[locations.size()] = NULL; // Terminador
 
-    // Inicializar method_location
+    char** method_allowed = new char*[locations.size() + 1];
+    method_allowed[locations.size()] = NULL;
+
     method_location = new char*[locations.size() + 1];
-    method_location[locations.size()] = NULL; // Terminador
+    method_location[locations.size()] = NULL;
 
     int i = 0;
     for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
         const std::vector<std::string>& allowed_methods = it->second.allow_methods;
 
-        // Crear una cadena para almacenar los caracteres 'G', 'P', 'D'
         std::string methods_str;
-
-        // Verificar qué métodos están permitidos y construir la cadena
         for (size_t j = 0; j < allowed_methods.size(); ++j) {
             if (allowed_methods[j] == "GET") {
                 methods_str += 'G';
@@ -86,11 +83,9 @@ void ServerConfig::struct_method_allowed() {
             }
         }
 
-        // Crear espacio para la cadena en method_allowed
         method_allowed[i] = new char[methods_str.size() + 1];
         strcpy(method_allowed[i], methods_str.c_str());
 
-        // Asignar la ubicación
         method_location[i] = new char[it->first.size() + 1]; // Asignar memoria para la ubicación
         strcpy(method_location[i], it->first.c_str()); // Copiar la ubicación
 
@@ -99,11 +94,17 @@ void ServerConfig::struct_method_allowed() {
         ++i;
     }
 
-    methods = method_allowed; // Guardar el arreglo de métodos permitidos
+    methods = method_allowed;
 }
 
-
-
+int findCharFromEnd(const std::string& str, char ch) {
+    for (int i = str.size() - 2; i >= 0; --i) {
+        if (str[i] == ch) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 
 bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
@@ -120,16 +121,32 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
             }
         }
     }
+
     for (int i = 0; method_location[i] != NULL; ++i) {
+
         if (strcmp(method_location[i], location.c_str()) == 0) {
             std::string met = methods[i];
-            std::cout << "Methods: " << met << std::endl;
+            
             if (met.find(m) != std::string::npos) {
                 return true;
             }
             else 
                 return false;
         }
+        else {
+            int dir = findCharFromEnd(location, '/');
+            std::string dir_location = location.substr(0, dir);
+            if (dir_location.size() == 0)
+                dir_location = "/";
+
+            if (strcmp(method_location[i], dir_location.c_str()) == 0) {
+                std::string met = methods[i];
+                if (met.find(m) != std::string::npos)
+                    return true;
+                else
+                    return false;
+            }
+        }
     }
-    return false;
+    return true;
 }

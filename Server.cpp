@@ -8,7 +8,7 @@ void Server::start(const ServerConfig& config) {
 	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
 
     // Create the socket
-    if ((this->sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		std::cerr << RED << "Error. Failed to create socket" << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
@@ -32,35 +32,35 @@ void Server::start(const ServerConfig& config) {
 	sockaddr.sin_port = htons(config.port);
 
     // Bind the port to the socket
-	if (bind(this->sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
+	if (bind(sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
 		std::cerr << RED << "Error. Failed to bind to port " << config.port << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
 
     // Set the socket in listening mode
-	if (listen(this->sockfd, 3) < 0) {
+	if (listen(sockfd, 3) < 0) {
 		std::cerr << RED << "Error. Failed to listen on socket" << RESET << std::endl;
     	exit(EXIT_FAILURE);
 	}
 
     // Add the main socket to the poll file descriptors list
 	pollfd main_socket_pollfd;
-	main_socket_pollfd.fd = this->sockfd;
+	main_socket_pollfd.fd = sockfd;
 	main_socket_pollfd.events = POLLIN;
-	this->poll_fds.push_back(main_socket_pollfd);
+	poll_fds.push_back(main_socket_pollfd);
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
     while (1) {
-		int poll_count = poll(this->poll_fds.data(), this->poll_fds.size(), -1);
+		int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
 		if (poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
 		}
 
-		for (size_t i = 0; i < this->poll_fds.size(); i++) {
-			if (this->poll_fds[i].revents & POLLIN) { // Check if there is read activity
-				if (this->poll_fds[i].fd == this->sockfd) { // New incoming connection
-					int connection = accept(this->sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
+		for (size_t i = 0; i < poll_fds.size(); i++) {
+			if (poll_fds[i].revents & POLLIN) { // Check if there is read activity
+				if (poll_fds[i].fd == sockfd) { // New incoming connection
+					int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
 					if (connection < 0) {
 						std::cerr << "[ERR] Failed to grab connection" << std::endl;
 						exit(EXIT_FAILURE);
@@ -70,10 +70,10 @@ void Server::start(const ServerConfig& config) {
 					pollfd new_client_pollfd;
 					new_client_pollfd.fd = connection;
 					new_client_pollfd.events = POLLIN;
-					this->poll_fds.push_back(new_client_pollfd);
+					poll_fds.push_back(new_client_pollfd);
                     Client new_client;
                     new_client.setIndex(new_client_pollfd.fd);
-                    this->clients.push_back(new_client);
+                    clients.push_back(new_client);
                     std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd - 3 << RESET << std::endl;
 
 				} else { // Read data from the client
@@ -160,5 +160,5 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
 
 void    Server::setConfig(ServerConfig& config)
 {
-	this->config = config;
+	config = config;
 }

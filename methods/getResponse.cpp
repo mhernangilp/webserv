@@ -113,6 +113,17 @@ std::string removeDuplicateSlashes(const std::string& path) {
     return result;
 }
 
+std::string normalizeUrl(const std::string& url) {
+    std::string normalized = removeDuplicateSlashes(url);
+
+    // Eliminar barras al final
+    size_t end = normalized.length();
+    while (end > 0 && normalized[end - 1] == '/') {
+        --end;
+    }
+
+    return normalized.substr(0, end); // Retornar la URL sin barras finales
+}
 
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
@@ -130,6 +141,26 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         request.setCode(405);
         close(client_socket);
         return (405);
+    }
+
+    std::string return_url = removeDuplicateSlashes(newUrl);
+    return_url = normalizeUrl(return_url);
+    for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+        if (it->first == return_url) {
+            if (it->second.return_path != "") {
+                // Enviar una respuesta de redirección
+                std::string redirectResponse =
+                    "HTTP/1.1 302 Found\r\n"
+                    "Location: " + it->second.return_path + "\r\n"
+                    "Content-Length: 0\r\n"
+                    "Connection: close\r\n"
+                    "\r\n";
+                send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
+                request.setCode(302);
+                close(client_socket);
+                return request.getCode();
+            }
+        }
     }
 
     if (newUrl == "/") {

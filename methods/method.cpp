@@ -11,7 +11,7 @@ void method(Request request, int socket, const ServerConfig& serverConfig) {
         else if (request.getMethod() == "POST")
             code = postResponse(request, socket, serverConfig);
 
-        std::cout << BLUE << "[INFO] Response sent to socket " << socket << ", Stats " << code << RESET << std::endl;
+        std::cout << BLUE << "[INFO] Response sent to client " << socket - 3 << ", Stats " << code << RESET << std::endl;
     }
 }
 

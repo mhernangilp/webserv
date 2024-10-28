@@ -74,10 +74,10 @@ void Server::start(const ServerConfig& config) {
                     Client new_client;
                     new_client.setIndex(new_client_pollfd.fd);
                     this->clients.push_back(new_client);
-                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd << RESET << std::endl;
+                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd - 3 << RESET << std::endl;
 
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(this->poll_fds[i].fd, poll_fds, clients, config);
+					bool clientConnected = processClientRequest(poll_fds[i].fd, config);
 					if (!clientConnected)
 						i--;
 				}
@@ -86,7 +86,7 @@ void Server::start(const ServerConfig& config) {
 	}
 }
 
-bool Server::processClientRequest(int client_fd, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, const ServerConfig& configServer) {
+bool Server::processClientRequest(int client_fd, const ServerConfig& configServer) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -97,7 +97,7 @@ bool Server::processClientRequest(int client_fd, std::vector<pollfd>& poll_fds, 
         bytesRead = read(client_fd, buffer, 16384);
 
         if (bytesRead <= 0) {
-            std::cout << "[INFO] Client " << client_fd << " Disconnected, Closing Connection ..." << std::endl;
+            std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
             for (size_t i = 0; i < poll_fds.size(); i++) {
                 if (poll_fds[i].fd == client_fd) {
@@ -142,11 +142,11 @@ bool Server::processClientRequest(int client_fd, std::vector<pollfd>& poll_fds, 
     }
 
     Request request(accumulated_request);
-    clients[client_fd - 3].setRequest(request);
+    clients[client_fd - 4].setRequest(request);
 
-    std::cout << BLUE << "[INFO] Message received from client " << client_fd  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_fd - 3 << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    method(clients[client_fd - 3].getRequest(), client_fd, configServer);
+    method(clients[client_fd - 4].getRequest(), client_fd, configServer);
 
     return true;
 }

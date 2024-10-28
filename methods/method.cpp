@@ -1,7 +1,7 @@
 #include "method.hpp"
 #include "../Server.hpp"
 
-void method(Request request, int socket, int index, const ServerConfig& serverConfig) {
+void method(Request request, int socket, const ServerConfig& serverConfig) {
     if (request.getMethod() == "GET" || request.getMethod() == "DELETE" || request.getMethod() == "POST"){
         int code = 0;			
         if (request.getMethod() == "GET")
@@ -11,7 +11,7 @@ void method(Request request, int socket, int index, const ServerConfig& serverCo
         else if (request.getMethod() == "POST")
             code = postResponse(request, socket, serverConfig);
 
-        std::cout << BLUE << "[INFO] Response sent to socket " << index << ", Stats " << code << RESET << std::endl;
+        std::cout << BLUE << "[INFO] Response sent to client " << socket - 3 << ", Stats " << code << RESET << std::endl;
     }
 }
 

@@ -10,6 +10,7 @@ class Client {
     private:
         Request request;
         std::string response;
+        int index;
 
     public:
         Client();
@@ -17,6 +18,8 @@ class Client {
 
         Request getRequest() const;
         void setRequest(const Request& new_request);
+        void setIndex(const int i);
+        int getIndex();
 };
 
 #endif

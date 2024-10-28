@@ -12,3 +12,11 @@ Request Client::getRequest() const {
 void Client::setRequest(const Request& new_request) {
     request = new_request;
 }
+
+void Client::setIndex(const int i) {
+    index = i;
+}
+
+int Client::getIndex() {
+    return index;
+}

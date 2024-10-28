@@ -95,7 +95,7 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
-std::string removeDuplicateSlashes(const std::string& path) {
+static std::string removeDuplicateSlashes(const std::string& path) {
     std::string result;
     bool lastWasSlash = false;
 
@@ -113,7 +113,7 @@ std::string removeDuplicateSlashes(const std::string& path) {
     return result;
 }
 
-std::string normalizeUrl(const std::string& url) {
+static std::string normalizeUrl(const std::string& url) {
     std::string normalized = removeDuplicateSlashes(url);
 
     // Eliminar barras al final
@@ -143,10 +143,9 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         return (405);
     }
 
-    std::string return_url = removeDuplicateSlashes(newUrl);
-    return_url = normalizeUrl(return_url);
+    newUrl = normalizeUrl(newUrl);
     for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
-        if (it->first == return_url) {
+        if (it->first == newUrl) {
             if (it->second.return_path != "") {
                 // Enviar una respuesta de redirección
                 std::string redirectResponse =

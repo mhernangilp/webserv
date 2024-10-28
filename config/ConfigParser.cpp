@@ -1,5 +1,35 @@
 #include "ConfigParser.hpp"
 
+static std::string removeDuplicateSlashes(const std::string& path) {
+    std::string result;
+    bool lastWasSlash = false;
+
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (path[i] == '/') {
+            if (!lastWasSlash) {
+                result += path[i];
+            }
+            lastWasSlash = true;
+        } else {
+            result += path[i];
+            lastWasSlash = false;
+        }
+    }
+    return result;
+}
+
+static std::string normalizeUrl(const std::string& url) {
+    std::string normalized = removeDuplicateSlashes(url);
+
+    // Eliminar barras al final
+    size_t end = normalized.length();
+    while (end > 0 && normalized[end - 1] == '/') {
+        --end;
+    }
+
+    return normalized.substr(0, end); // Retornar la URL sin barras finales
+}
+
 int ConfigParser::parseConfig(const std::string& filename) {
     std::ifstream config_file(filename.c_str());
     std::string line;
@@ -63,7 +93,7 @@ int ConfigParser::parseConfig(const std::string& filename) {
             iss >> location_path;
             current_block = "location";
             current_location = LocationConfig();
-            current_location.location = location_path;
+            current_location.location = normalizeUrl(location_path);
         } else if (key == "}") {
             if (current_block == "location") {
                 server.addLocation(current_location.location, current_location);
@@ -83,7 +113,7 @@ int ConfigParser::parseConfig(const std::string& filename) {
     }
 
     if (access((server.root + server.index).c_str(), R_OK)) {
-        std::cerr << RED << "[ERR] Invalid index." << RESET << std::endl;
+        std::cerr << RED << "[ERR] Invalid index." << server.root << server.index << RESET << std::endl;
         return 1;
     }
 
@@ -125,25 +155,27 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 std::cerr << RED << "[ERR] error type not valid";
                 return 1;
             }
-            server.error_page[error_type] = error_path.substr(0, error_path.size() - 1);
-        } else if (key == "client_max_body_size") {
-            iss >> server.client_max_body_size;
+            server.error_page[error_type] = normalizeUrl(error_path.substr(0, error_path.size() - 1));
         } else if (key == "root") {
             std::string temp_root;
             iss >> temp_root;
             if (!temp_root.empty()) {
-                server.root = temp_root.substr(0, temp_root.size() - 1);
+                server.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1)) + "/";
             }
         } else if (key == "index") {
             std::string temp_index;
             iss >> temp_index;
             if (!temp_index.empty()) {
-                server.index = temp_index.substr(0, temp_index.size() - 1);
+                server.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
             }
         }
     } else if (current_block == "location") {
         if (key == "root") {
+            std::string temp_root;
             iss >> current_location.root;
+            if (!temp_root.empty()) {
+                current_location.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1)) + "/";
+            }
         } else if (key == "autoindex") {
             std::string temp_autoindex;
             iss >> temp_autoindex;
@@ -165,13 +197,13 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             std::string temp_index;
             iss >> temp_index;
             if (!temp_index.empty()) {
-                current_location.index = temp_index.substr(0, temp_index.size() - 1);
+                current_location.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
             }
         } else if (key == "return") {
             std::string temp_return_path;
             iss >> temp_return_path;
             if (!temp_return_path.empty()) {
-                current_location.return_path = temp_return_path.substr(0, temp_return_path.size() - 1);
+                current_location.return_path = normalizeUrl(temp_return_path.substr(0, temp_return_path.size() - 1));
             }
         }
     }

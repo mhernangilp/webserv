@@ -35,7 +35,7 @@ int deleteResponse(Request request, int client_socket, const ServerConfig& serve
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
 
-    if (!serverConfig.isMethodAllowed(newUrl, 'D')) {
+    if (!serverConfig.isMethodAllowed(newUrl, 'D') || urlRecoil(request.getUrl())) {
         std::string notFoundPagePath = "docs/kebab_web/error_pages/405.html";
         std::string body = getFileContent(notFoundPagePath);
         if (body.empty())

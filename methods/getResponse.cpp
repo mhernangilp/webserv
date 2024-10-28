@@ -122,7 +122,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
-    if (!serverConfig.isMethodAllowed(newUrl, 'G')) {
+    if (!serverConfig.isMethodAllowed(newUrl, 'G') || urlRecoil(request.getUrl())) {
         std::string response_body = getFileContent("docs/kebab_web/error_pages/405.html");
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";

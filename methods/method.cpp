@@ -99,3 +99,15 @@ void sendHttpResponse(int client_socket, const std::string& statusCode, const st
     
     send(client_socket, response.c_str(), response.size(), 0);
 }
+
+bool urlRecoil(const std::string &url){
+    for (int i = 0; url[i]; i++){
+        if (url[i] == '/' && url[i + 1] && url[i + 1] == '.'){
+            if (url[i + 2] == '\0' || url[i + 2] == '/')
+                return true;
+            else if (url[i + 2] && url[i + 2] == '.' && (url[i + 3] == '\0' || url[i + 3] == '/'))
+                return true;
+        }
+    }
+    return false;
+}

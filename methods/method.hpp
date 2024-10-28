@@ -16,6 +16,7 @@ std::string getFileContent(const std::string& filePath);
 std::string urlDecode(const std::string& url);
 bool isDirectory(const std::string& path);
 int checkdir(const std::string& url, int client_socket);
+bool urlRecoil(const std::string &url);
 void sendHttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body);
 
 #endif

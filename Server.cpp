@@ -97,19 +97,26 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
         bytesRead = read(client_fd, buffer, 16384);
 
         if (bytesRead <= 0) {
+            int changed = 0;
             std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
             for (size_t i = 0; i < poll_fds.size(); i++) {
                 if (poll_fds[i].fd == client_fd) {
                     poll_fds.erase(poll_fds.begin() + i);
+                    changed++;
                     break;
                 }
             }
             for (size_t i = 0; i < clients.size(); i++) {
                 if (clients[i].getIndex() == client_fd) {
                     clients.erase(clients.begin() + i);
+                    changed++;
                     break;
                 }
+            }
+            if (changed != 2) {
+                std::cerr << "[ERR] Error on client deletion" << std::endl;
+                exit(EXIT_FAILURE);
             }
             return false;
         }

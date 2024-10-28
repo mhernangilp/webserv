@@ -67,16 +67,17 @@ void Server::start(const ServerConfig& config) {
 					}
 
 					// Add the new client socket to poll
-                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << poll_fds.size() << RESET << std::endl;
 					pollfd new_client_pollfd;
 					new_client_pollfd.fd = connection;
 					new_client_pollfd.events = POLLIN;
 					this->poll_fds.push_back(new_client_pollfd);
                     Client new_client;
+                    new_client.setIndex(new_client_pollfd.fd);
                     this->clients.push_back(new_client);
+                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd << RESET << std::endl;
 
 				} else { // Read data from the client
-					bool clientConnected = processClientRequest(this->poll_fds[i].fd, i, poll_fds, clients, config);
+					bool clientConnected = processClientRequest(this->poll_fds[i].fd, poll_fds, clients, config);
 					if (!clientConnected)
 						i--;
 				}
@@ -85,7 +86,7 @@ void Server::start(const ServerConfig& config) {
 	}
 }
 
-bool Server::processClientRequest(int client_fd, int client_index, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, const ServerConfig& configServer) {
+bool Server::processClientRequest(int client_fd, std::vector<pollfd>& poll_fds, std::vector<Client>& clients, const ServerConfig& configServer) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -95,20 +96,21 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     while (true) {
         bytesRead = read(client_fd, buffer, 16384);
 
-        if (bytesRead < 0) {
-            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
+        if (bytesRead <= 0) {
+            std::cout << "[INFO] Client " << client_fd << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
-            poll_fds.erase(poll_fds.begin() + client_index);
-            clients.erase(clients.begin() + (client_index - 1));
-            return false;
-        }
-
-        if (bytesRead == 0) {
-            // El cliente se ha desconectado
-            std::cout << "[INFO] Client " << client_index << " Disconnected, Closing Connection ..." << std::endl;
-            close(client_fd);
-            poll_fds.erase(poll_fds.begin() + client_index);
-            clients.erase(clients.begin() + (client_index - 1));
+            for (size_t i = 0; i < poll_fds.size(); i++) {
+                if (poll_fds[i].fd == client_fd) {
+                    poll_fds.erase(poll_fds.begin() + i);
+                    break;
+                }
+            }
+            for (size_t i = 0; i < clients.size(); i++) {
+                if (clients[i].getIndex() == client_fd) {
+                    clients.erase(clients.begin() + i);
+                    break;
+                }
+            }
             return false;
         }
 
@@ -140,11 +142,11 @@ bool Server::processClientRequest(int client_fd, int client_index, std::vector<p
     }
 
     Request request(accumulated_request);
-    clients[client_index - 1].setRequest(request);
+    clients[client_fd - 3].setRequest(request);
 
-    std::cout << BLUE << "[INFO] Message received from client " << client_index  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_fd  << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    method(clients[client_index - 1].getRequest(), client_fd, client_index, configServer);
+    method(clients[client_fd - 3].getRequest(), client_fd, configServer);
 
     return true;
 }

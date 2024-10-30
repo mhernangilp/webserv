@@ -91,12 +91,19 @@ int ConfigParser::parseConfig(const std::string& filename) {
         } else if (key == "location") {
             std::string location_path;
             iss >> location_path;
+            std::cout << RED << "LOCATION PATH '" << location_path << "'" << std::endl;
             current_block = "location";
             current_location = LocationConfig();
-            current_location.location = normalizeUrl(location_path);
+            if (location_path != "/")
+                current_location.location = normalizeUrl(location_path);
+            else
+                current_location.location = location_path;
         } else if (key == "}") {
             if (current_block == "location") {
                 server.addLocation(current_location.location, current_location);
+                std::cout << RED << "Añado location " << current_location.location << std::endl;
+                current_location.print();
+                std::cout << RESET;
                 current_block = "server";
             }
         } else {

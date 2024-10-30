@@ -126,6 +126,17 @@ static std::string normalizeUrl(const std::string& url) {
     return normalized.substr(0, end); // Retornar la URL sin barras finales
 }
 
+static std::string getErrorPage(int error, const ServerConfig& serverConfig) {
+    std::map<int, std::string>::const_iterator it = serverConfig.error_page.find(error);
+    if (it != serverConfig.error_page.end()) {
+        return serverConfig.root + it->second;
+    } else {
+        std::stringstream ss;
+        ss << serverConfig.root << "error_pages/" << error << ".html";
+        return ss.str();
+    }
+}
+
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
@@ -135,7 +146,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
     if (!serverConfig.isMethodAllowed(newUrl, 'G') || urlRecoil(request.getUrl())) {
-        std::string response_body = getFileContent("docs/kebab_web/error_pages/405.html");
+        std::string response_body = getFileContent(getErrorPage(405, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
         sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
@@ -190,7 +201,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
 
         if (indexContent.empty() && !autoindex_allowed(filePath, serverConfig)) {
             // Retornar un error 403 Forbidden
-            std::string forbiddenPagePath =  "docs/kebab_web/error_pages/403.html";
+            std::string forbiddenPagePath =  getErrorPage(403, serverConfig);
             std::string forbiddenPageContent = getFileContent(forbiddenPagePath);
 
             if (forbiddenPageContent.empty()) {
@@ -234,7 +245,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         
         if (fileContent.empty()) {
             // Si no se encuentra el archivo solicitado, cargar y devolver el archivo 404.html
-            std::string notFoundPagePath = "docs/kebab_web/error_pages/404.html";
+            std::string notFoundPagePath = getErrorPage(404, serverConfig);
             std::string notFoundPageContent = getFileContent(notFoundPagePath);
 
             if (notFoundPageContent.empty()) {

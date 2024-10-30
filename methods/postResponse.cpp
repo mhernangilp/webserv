@@ -59,7 +59,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         return (415);
     }
 
-    std::string full_path = serverConfig.root + "gallery/" + name;
+    std::string full_path = serverConfig.root + "fake-gallery/" + name;
     std::string base_name = name;
     std::string extension = "";
     // Separar el nombre base y la extensión si tiene.
@@ -72,7 +72,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     while (fileExists(full_path)) {
         std::ostringstream new_filename;
         new_filename << base_name << "(" << file_index << ")" << extension;
-        full_path = serverConfig.root + "gallery/" + new_filename.str();
+        full_path = serverConfig.root + "fake-gallery/" + new_filename.str();
         file_index++;
     }
 

@@ -160,5 +160,5 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
 
 void    Server::setConfig(ServerConfig& config)
 {
-	config = config;
+	this->config = config;
 }

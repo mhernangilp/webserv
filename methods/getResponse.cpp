@@ -203,7 +203,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         // Check for custom index
         std::string remainingPath = filePath.substr(serverConfig.root.length() - 1);
         for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
-            if (!it->second.index.empty() && it->first == remainingPath) {
+            if (!it->second.index.empty() && (it->first == remainingPath || (!it->second.root.empty() && it->second.root == remainingPath))) {
                 indexPath = filePath + "/" +it->second.index;
             }
         }

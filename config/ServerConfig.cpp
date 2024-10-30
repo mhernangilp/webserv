@@ -28,6 +28,13 @@ ServerConfig::ServerConfig() : port(8001), host("127.0.0.1"), server_name("local
     this->addLocation(location.location, location);
 
     location = LocationConfig();
+    location.location = "/gallery";
+    location.root = "/fake-gallery";
+    location.index = "gallery.html";
+    location.allow_methods.push_back("GET");
+    this->addLocation(location.location, location);
+
+    location = LocationConfig();
     location.location = "/cgi-bin";
     location.root = "./";
     location.allow_methods.push_back("GET");

@@ -1,5 +1,6 @@
 #include "method.hpp"
 #include "Request.hpp"
+#include "../Server.hpp"
 #include <sys/stat.h>
 #include <iostream>
 #include <dirent.h>
@@ -158,6 +159,17 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 request.setCode(302);
                 close(client_socket);
                 return request.getCode();
+            }
+        }
+    }
+
+    // Replace root of location
+    for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+        if (!it->second.root.empty()) {
+            std::string old_url = newUrl;
+            if (old_url.find(it->first) == 0) {
+                old_url.replace(0, it->first.length(), it->second.root);
+                newUrl = old_url;
             }
         }
     }

@@ -34,6 +34,7 @@ class Request {
         std::string getFileName() const;
         int getCode();
         void setCode(int code);
+        void setUrl(std::string url);
 
     private:
         void parseRequest(const std::string& raw_request);

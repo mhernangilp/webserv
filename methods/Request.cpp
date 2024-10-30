@@ -99,3 +99,4 @@ std::string Request::getBody() const { return body; }
 std::string Request::getFileName() const { return file_name; }
 int Request::getCode() { return code; }
 void Request::setCode(int code) { this->code = code; }
+void Request::setUrl(std::string url) { this->url = url; }

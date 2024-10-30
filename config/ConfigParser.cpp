@@ -172,9 +172,9 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
     } else if (current_block == "location") {
         if (key == "root") {
             std::string temp_root;
-            iss >> current_location.root;
+            iss >> temp_root;
             if (!temp_root.empty()) {
-                current_location.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1)) + "/";
+                current_location.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1));
             }
         } else if (key == "autoindex") {
             std::string temp_autoindex;

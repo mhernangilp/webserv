@@ -126,17 +126,6 @@ static std::string normalizeUrl(const std::string& url) {
     return normalized.substr(0, end); // Retornar la URL sin barras finales
 }
 
-static std::string getErrorPage(int error, const ServerConfig& serverConfig) {
-    std::map<int, std::string>::const_iterator it = serverConfig.error_page.find(error);
-    if (it != serverConfig.error_page.end()) {
-        return serverConfig.root + it->second;
-    } else {
-        std::stringstream ss;
-        ss << serverConfig.root << "error_pages/" << error << ".html";
-        return ss.str();
-    }
-}
-
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;

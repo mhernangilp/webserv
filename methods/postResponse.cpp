@@ -1,16 +1,5 @@
 #include "method.hpp"
 
-static std::string getErrorPage(int error, const ServerConfig& serverConfig) {
-    std::map<int, std::string>::const_iterator it = serverConfig.error_page.find(error);
-    if (it != serverConfig.error_page.end()) {
-        return serverConfig.root + it->second;
-    } else {
-        std::stringstream ss;
-        ss << serverConfig.root << "error_pages/" << error << ".html";
-        return ss.str();
-    }
-}
-
 bool fileExists(const std::string& filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);

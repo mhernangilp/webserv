@@ -1,16 +1,5 @@
 #include "method.hpp"
 
-static std::string getErrorPage(int error, const ServerConfig& serverConfig) {
-    std::map<int, std::string>::const_iterator it = serverConfig.error_page.find(error);
-    if (it != serverConfig.error_page.end()) {
-        return serverConfig.root + it->second;
-    } else {
-        std::stringstream ss;
-        ss << serverConfig.root << "error_pages/" << error << ".html";
-        return ss.str();
-    }
-}
-
 int try_delete(std::string url, int client_socket, Request request, const ServerConfig& serverConfig) {
     if (isDirectory(url)) {
         if (!checkdir(url, client_socket)) {

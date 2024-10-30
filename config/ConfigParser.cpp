@@ -101,8 +101,6 @@ int ConfigParser::parseConfig(const std::string& filename) {
         } else if (key == "}") {
             if (current_block == "location") {
                 server.addLocation(current_location.location, current_location);
-                std::cout << RED << "Añado location " << current_location.location << std::endl;
-                current_location.print();
                 std::cout << RESET;
                 current_block = "server";
             }
@@ -206,6 +204,10 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             if (!temp_index.empty()) {
                 current_location.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
             }
+            if (!current_location.index.empty() && current_location.index[0] == '/') {
+                std::cerr << RED << "Error. location index can't be absolute ";
+                return 1;
+            } 
         } else if (key == "return") {
             std::string temp_return_path;
             iss >> temp_return_path;

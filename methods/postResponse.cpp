@@ -59,7 +59,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         return (415);
     }
 
-    std::string full_path = "docs/kebab_web/gallery/" + name;
+    std::string full_path = serverConfig.root + "gallery/" + name;
     std::string base_name = name;
     std::string extension = "";
     // Separar el nombre base y la extensión si tiene.
@@ -72,7 +72,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     while (fileExists(full_path)) {
         std::ostringstream new_filename;
         new_filename << base_name << "(" << file_index << ")" << extension;
-        full_path = "docs/kebab_web/gallery/" + new_filename.str();
+        full_path = serverConfig.root + "gallery/" + new_filename.str();
         file_index++;
     }
 
@@ -87,7 +87,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     } else{
         outFile << body;
         outFile.close();
-        std::string response_body = getFileContent("docs/kebab_web/upload/upload_done.html");
+        std::string response_body = getFileContent(serverConfig.root + "upload/upload_done.html");
         if (response_body.empty())
             std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
         sendHttpResponse(client_socket, "200 OK", "text/html", response_body);

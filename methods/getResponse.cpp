@@ -156,6 +156,8 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     }
 
     newUrl = normalizeUrl(newUrl);
+
+    // Return to specific path if present in config file
     for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
         if (it->first == newUrl) {
             if (it->second.return_path != "") {
@@ -197,6 +199,15 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     if (stat(filePath.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode)) {
         // Si es un directorio, verificar si tiene un index.html
         std::string indexPath = filePath + "/index.html";
+        
+        // Check for custom index
+        std::string remainingPath = filePath.substr(serverConfig.root.length() - 1);
+        for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+            if (!it->second.index.empty() && it->first == remainingPath) {
+                indexPath = filePath + "/" +it->second.index;
+            }
+        }
+        
         std::string indexContent = getFileContent(indexPath);
 
         if (indexContent.empty() && !autoindex_allowed(filePath, serverConfig)) {

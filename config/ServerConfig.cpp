@@ -108,12 +108,16 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
             if (dir_location.size() == 0)
                 dir_location = "/";
 
-            if (strcmp(method_location[i], dir_location.c_str()) == 0) {
-                std::string met = methods[i];
-                if (met.find(m) != std::string::npos)
-                    return true;
-                else
-                    return false;
+            while (dir_location.size() > 0){
+                if (strcmp(method_location[i], dir_location.c_str()) == 0) {
+                    std::string met = methods[i];
+                    if (met.find(m) != std::string::npos)
+                        return true;
+                    else
+                        return false;
+                }
+                dir = findCharFromEnd(dir_location, '/');
+                dir_location = location.substr(0, dir);
             }
         }
     }

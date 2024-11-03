@@ -1,6 +1,6 @@
 <?php
-
-$filename = $argv[1]; // El nombre del archivo viene como argumento
+$filename = $argv[1];
+$exist = $argv[2];
 
 echo "<html><head><style>
     body {
@@ -21,8 +21,14 @@ echo "<html><head><style>
     }
 </style></head><body>";
 
-echo "<h1><strong>$filename</strong> file was successfully uploaded!</h1>";
-echo "<p>You are goint to be redirected automatically in <span id='contador'>5</span> seconds...</p>";
+if ($exist === "YES") {
+    echo "<h1><strong>File '$filename' exists</strong></h1>";
+} else {
+    echo "<h1><strong>File '$filename' doesn't exist</strong></h1>";
+}
+
+echo "<p>You are going to be redirected automatically in <span id='contador'>5</span> seconds...</p>";
+
 echo "
 <script>
 // Configura el contador
@@ -35,7 +41,7 @@ const interval = setInterval(() => {
 
     if (segundos <= 0) {
         clearInterval(interval);
-        window.location.href = 'upload.html'; // Cambia la URL al menú principal
+        window.location.href = '../upload/upload.html'; // Cambia la URL al menú principal
     }
 }, 1000);
 </script>";

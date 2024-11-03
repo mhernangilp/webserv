@@ -60,9 +60,6 @@ void ServerConfig::struct_method_allowed() {
 
         method_location[i] = new char[it->first.size() + 1]; // Asignar memoria para la ubicación
         strcpy(method_location[i], it->first.c_str()); // Copiar la ubicación
-
-        std::cout << "Methods Allowed: " << method_allowed[i] << " on location " << method_location[i] << std::endl;
-
         ++i;
     }
 

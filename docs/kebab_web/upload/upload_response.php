@@ -1,10 +1,7 @@
 <?php
-// upload_response.php
 
-// Obtener el nombre del archivo
 $filename = $argv[1]; // El nombre del archivo viene como argumento
 
-// Generar la respuesta HTML con CSS en línea
 echo "<html><head><style>
     body {
         font-family: Arial, sans-serif;

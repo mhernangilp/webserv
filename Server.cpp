@@ -154,7 +154,10 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
 
     method(clients[client_fd - 4].getRequest(), client_fd, configServer);
 
-    return true;
+    std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
+    close(client_fd);
+    removeClient(client_fd);
+    return false;
 }
 
 void    Server::setConfig(ServerConfig& config)

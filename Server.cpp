@@ -1,5 +1,7 @@
 #include "Server.hpp"
 
+#define POLL_TIMEOUT_MS 1000  // Timeout de 1 segundos
+
 Server::Server() {}
 
 Server::~Server() {}
@@ -51,10 +53,22 @@ void Server::start(const ServerConfig& config) {
 
 	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
     while (1) {
-		int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
-		if (poll_count < 0) {
+		int poll_count = poll(poll_fds.data(), poll_fds.size(), POLL_TIMEOUT_MS);
+		
+        for (size_t i = 0; i < clients.size(); i++) {
+            if (time(NULL) - clients[i].getLastReadTime() > 5) {
+                std::cout << "[INFO] Client " << clients[i].getIndex() - 3 << " Time Out, Closing Connection ..." << std::endl;
+                close(clients[i].getIndex());
+                removeClient(clients[i].getIndex());
+            }
+        }
+
+        if (poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
+		} else if (poll_count == 0) {
+			// Timeout: No hay actividad, pero el servidor continúa ejecutándose
+			continue;
 		}
 
 		for (size_t i = 0; i < poll_fds.size(); i++) {
@@ -73,13 +87,14 @@ void Server::start(const ServerConfig& config) {
 					poll_fds.push_back(new_client_pollfd);
                     Client new_client;
                     new_client.setIndex(new_client_pollfd.fd);
+                    new_client.setLastReadTime(time(NULL));
                     clients.push_back(new_client);
                     std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd - 3 << RESET << std::endl;
 
 				} else { // Read data from the client
 					bool clientConnected = processClientRequest(poll_fds[i].fd, config);
 					if (!clientConnected)
-						i--;
+						continue;
 				}
 			}
 		}
@@ -94,34 +109,18 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
     size_t contentLength = 0;
 
     while (true) {
-        bytesRead = read(client_fd, buffer, 16384);
+        bytesRead = read(client_fd, buffer, sizeof(buffer));
 
-        if (bytesRead <= 0) {
-            int changed = 0;
+        if (bytesRead > 0) {
+            clients[client_fd - 4].setLastReadTime(time(NULL));  // Reiniciar temporizador en caso de actividad
+            accumulated_request.append(buffer, bytesRead);
+        } else if (bytesRead <= 0) {
+            // Cliente desconectado o error
             std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
-            for (size_t i = 0; i < poll_fds.size(); i++) {
-                if (poll_fds[i].fd == client_fd) {
-                    poll_fds.erase(poll_fds.begin() + i);
-                    changed++;
-                    break;
-                }
-            }
-            for (size_t i = 0; i < clients.size(); i++) {
-                if (clients[i].getIndex() == client_fd) {
-                    clients.erase(clients.begin() + i);
-                    changed++;
-                    break;
-                }
-            }
-            if (changed != 2) {
-                std::cerr << "[ERR] Error on client deletion" << std::endl;
-                exit(EXIT_FAILURE);
-            }
+            removeClient(client_fd);
             return false;
         }
-
-        accumulated_request.append(buffer, bytesRead);
 
         if (!headersRead) {
             size_t headerEnd = accumulated_request.find("\r\n\r\n");
@@ -161,4 +160,27 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
 void    Server::setConfig(ServerConfig& config)
 {
 	this->config = config;
+}
+
+void Server::removeClient(int client_fd) {
+    int changed = 0;
+
+	for (size_t i = 0; i < poll_fds.size(); i++) {
+        if (poll_fds[i].fd == client_fd) {
+            poll_fds.erase(poll_fds.begin() + i);
+            changed++;
+            break;
+        }
+    }
+    for (size_t i = 0; i < clients.size(); i++) {
+        if (clients[i].getIndex() == client_fd) {
+            clients.erase(clients.begin() + i);
+            changed++;
+            break;
+        }
+    }
+    if (changed != 2) {
+        std::cerr << "[ERR] Error on client deletion" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }

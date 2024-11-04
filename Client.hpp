@@ -11,6 +11,7 @@ class Client {
         Request request;
         std::string response;
         int index;
+        time_t lastReadTime;
 
     public:
         Client();
@@ -20,6 +21,8 @@ class Client {
         void setRequest(const Request& new_request);
         void setIndex(const int i);
         int getIndex();
+        void setLastReadTime(time_t time);
+        time_t getLastReadTime();
 };
 
 #endif

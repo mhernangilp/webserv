@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <cstdlib>
+#include <ctime>
 
 #define RESET      "\033[0m"
 #define RED        "\033[31m"
@@ -40,7 +41,8 @@ class Server {
 
         void    start(const ServerConfig& config);
         void    setConfig(ServerConfig& config);
-        bool processClientRequest(int client_fd, const ServerConfig& config);
+        bool    processClientRequest(int client_fd, const ServerConfig& config);
+        void    removeClient(int client_fd);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

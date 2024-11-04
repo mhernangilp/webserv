@@ -20,3 +20,10 @@ void Client::setIndex(const int i) {
 int Client::getIndex() {
     return index;
 }
+
+void Client::setLastReadTime(long int time) {
+    lastReadTime = time;
+}
+long int Client::getLastReadTime() {
+    return lastReadTime;
+}

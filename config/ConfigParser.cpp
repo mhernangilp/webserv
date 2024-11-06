@@ -1,34 +1,5 @@
 #include "ConfigParser.hpp"
-
-static std::string removeDuplicateSlashes(const std::string& path) {
-    std::string result;
-    bool lastWasSlash = false;
-
-    for (size_t i = 0; i < path.size(); ++i) {
-        if (path[i] == '/') {
-            if (!lastWasSlash) {
-                result += path[i];
-            }
-            lastWasSlash = true;
-        } else {
-            result += path[i];
-            lastWasSlash = false;
-        }
-    }
-    return result;
-}
-
-static std::string normalizeUrl(const std::string& url) {
-    std::string normalized = removeDuplicateSlashes(url);
-
-    // Eliminar barras al final
-    size_t end = normalized.length();
-    while (end > 0 && normalized[end - 1] == '/') {
-        --end;
-    }
-
-    return normalized.substr(0, end); // Retornar la URL sin barras finales
-}
+#include "../Utils.hpp"
 
 int ConfigParser::parseConfig(const std::string& filename) {
     std::ifstream config_file(filename.c_str());

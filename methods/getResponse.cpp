@@ -100,15 +100,19 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
-    const std::string& url = request.getUrl();
+    std::string url = request.getUrl();
     std::string newUrl = url;
 
-    // Detectar y redirigir URL con barra final
-    if (!url.empty() && url[url.size() - 1] == '/') {
-        std::string redirectedUrl = url.substr(0, url.size() - 1);
+    // Eliminar barras adicionales al final de la URL
+    while (url.size() > 1 && url[url.size() - 1] == '/') {
+        url.erase(url.size() - 1);
+    }
+
+    // Si la URL inicial era diferente de la URL limpiada, hacer una redirección
+    if (url != request.getUrl()) {
         std::string redirectResponse =
             "HTTP/1.1 301 Moved Permanently\r\n"
-            "Location: " + redirectedUrl + "\r\n"
+            "Location: " + url + "\r\n"
             "Content-Length: 0\r\n"
             "Connection: close\r\n"
             "\r\n";

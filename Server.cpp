@@ -15,6 +15,13 @@ void Server::start(const ServerConfig& config) {
     	exit(EXIT_FAILURE);
 	}
 
+    // Set socket options
+    int opt = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        std::cerr << RED << "Error. Failed to set socket options" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     // Configuration to assign the port to the socket
     sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));

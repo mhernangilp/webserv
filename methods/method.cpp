@@ -122,3 +122,8 @@ std::string getErrorPage(int error, const ServerConfig& serverConfig) {
         return ss.str();
     }
 }
+
+bool fileExists(const std::string& filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+}

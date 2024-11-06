@@ -1,10 +1,5 @@
 #include "method.hpp"
 
-bool fileExists(const std::string& filename) {
-    struct stat buffer;
-    return (stat(filename.c_str(), &buffer) == 0);
-}
-
 int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name){
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
         std::string response_body;

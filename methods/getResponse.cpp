@@ -97,6 +97,103 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
+int exc_script(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists){
+    std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
+    std::string response_body;
+
+    std::string command = "php " + script_path + " " + name + " " + exists;
+
+    FILE* pipe = popen(command.c_str(), "r");
+    if (pipe) {
+        char buffer[128];
+        char *fg = fgets(buffer, sizeof(buffer), pipe);
+        if (fg != NULL){
+            while (fg != NULL) {
+                response_body += buffer;
+                fg = fgets(buffer, sizeof(buffer), pipe);
+            }
+        }
+        else{
+            std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+            if (response_body.empty())
+                std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+            request.setCode(500);
+            close (client_socket);
+            return (500);
+        }
+        pclose(pipe);
+        sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+        request.setCode(200);
+    } else {
+        std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        request.setCode(500);
+    }
+    close (client_socket);
+    return (request.getCode());
+}
+
+int cgi_char(const std::string& str, char ch) {
+    for (int i = str.size() - 2; i >= 0; --i) {
+        if (str[i] == ch) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int check_reps(std::string string){
+    int ump = 0;
+    int sign = 0;
+
+    for (int i = 0; string[i]; i++){
+        if (string[i] == '=')
+            sign++;
+        if (string[i] == '&')
+            ump++;
+    }
+    if (ump != 1 || sign != 2)
+        return -1;
+    return 0;
+}
+
+// http://localhost:8002/cgi-bin/checker.php?filename=CV.pdf&exists=NO
+int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
+    const std::string url = serverConfig.root + request.getUrl();
+    std::string new_url;
+
+    size_t pos = url.find('?');
+    if (pos != std::string::npos){
+        new_url = url.substr(0, pos);
+            if (fileExists(new_url)){
+                int i = cgi_char(new_url.c_str(), '/');
+                std::string file = new_url.substr(i, new_url.size());
+                if (file == "/checker.php"){
+                    std::string variables = url.substr(pos + 1, url.size() - pos - 1);
+
+                    if (!check_reps(variables)){
+                        std::string v1 = variables.substr(variables.find('=') + 1, variables.find('&') - variables.find('=') - 1);
+                        std::string v2 = variables.substr(cgi_char(variables.c_str(), '=') + 1, variables.size());
+                        request.setCode(exc_script(request, serverConfig, client_socket, v1, v2));
+                        return (request.getCode());
+                    }
+                    else{
+                        std::string response_body = getFileContent(getErrorPage(400, serverConfig));
+                        if (response_body.empty())
+                            std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
+                        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+                        request.setCode(400);
+                        return (400);
+                    }
+                }
+            }
+    }
+    return -1;
+}
+
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
     std::string filePath;
     struct stat fileStat;
@@ -234,6 +331,11 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         std::string fileContent = getFileContent(filePath);
         
         if (fileContent.empty()) {
+            int script = cgi(request, serverConfig, client_socket);
+            if (script != -1){
+                close (client_socket);
+                return (script);
+            }
             // Si no se encuentra el archivo solicitado, cargar y devolver el archivo 404.html
             std::string notFoundPagePath = getErrorPage(404, serverConfig);
             std::string notFoundPageContent = getFileContent(notFoundPagePath);

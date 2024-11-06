@@ -173,7 +173,6 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     }
 
     filePath = removeDuplicateSlashes(filePath);
-    std::cout << "Compruebo " << filePath << std::endl;
 
     // Verificar si la ruta es un directorio
     if (stat(filePath.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode)) {

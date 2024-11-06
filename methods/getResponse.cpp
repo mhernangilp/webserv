@@ -102,6 +102,21 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     struct stat fileStat;
     const std::string& url = request.getUrl();
     std::string newUrl = url;
+
+    // Detectar y redirigir URL con barra final
+    if (!url.empty() && url[url.size() - 1] == '/') {
+        std::string redirectedUrl = url.substr(0, url.size() - 1);
+        std::string redirectResponse =
+            "HTTP/1.1 301 Moved Permanently\r\n"
+            "Location: " + redirectedUrl + "\r\n"
+            "Content-Length: 0\r\n"
+            "Connection: close\r\n"
+            "\r\n";
+        send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
+        request.setCode(301);
+        close(client_socket);
+        return 301;
+    }
     
     if (access(url.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
@@ -154,6 +169,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     }
 
     filePath = removeDuplicateSlashes(filePath);
+    std::cout << "Compruebo " << filePath << std::endl;
 
     // Verificar si la ruta es un directorio
     if (stat(filePath.c_str(), &fileStat) == 0 && S_ISDIR(fileStat.st_mode)) {

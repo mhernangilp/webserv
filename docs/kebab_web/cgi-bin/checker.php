@@ -19,6 +19,15 @@ echo "<html><head><style>
         font-weight: bold;
         color: #FF5722;
     }
+    a {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 10px; /* Esto separa los botones */
+        display: inline-block; /* Hace que los botones estén en una línea */
+    }
 </style></head><body>";
 
 if ($exist === "YES") {
@@ -27,24 +36,9 @@ if ($exist === "YES") {
     echo "<h1><strong>File '$filename' doesn't exist</strong></h1>";
 }
 
-echo "<p>You are going to be redirected automatically in <span id='contador'>5</span> seconds...</p>";
-
-echo "
-<script>
-// Configura el contador
-let segundos = 5;
-const contador = document.getElementById('contador');
-
-const interval = setInterval(() => {
-    segundos--;
-    contador.textContent = segundos;
-
-    if (segundos <= 0) {
-        clearInterval(interval);
-        window.location.href = '../upload/upload.html'; // Cambia la URL al menú principal
-    }
-}, 1000);
-</script>";
+echo '<a href="../index.html">Home</a>';
+echo '<a href="../menu/menu.html">Menu</a>';
+echo '<a href="../upload/upload.html">Upload</a>';
 
 echo "</body></html>";
 ?>

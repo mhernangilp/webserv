@@ -1,44 +1,86 @@
 #include "method.hpp"
 
-int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name){
+int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name) {
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
-        std::string response_body;
+    std::string response_body;
 
-        std::string exists = "NO";
-        if (fileExists(serverConfig.root + "/fake-gallery/" + name))
-            exists = "YES";
-        std::string command = "php " + script_path + " " + "\"" + name + "\"" + " " + exists;
+    std::string exists = "NO";
+    if (fileExists(serverConfig.root + "/fake-gallery/" + name))
+        exists = "YES";
+    
+    std::string command = "php " + script_path + " " + "\"" + name + "\"" + " " + exists;
+    pid_t pid = fork();
+    
+    if (pid < 0) {
+        std::cerr << "Fork failed!" << std::endl;
+        std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Fork failed.</p></body></html>";
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        request.setCode(500);
+        close(client_socket);
+        return 500;
+    }
+
+    if (pid == 0) {
         FILE* pipe = popen(command.c_str(), "r");
+        
         if (pipe) {
             char buffer[128];
             char *fg = fgets(buffer, sizeof(buffer), pipe);
-            if (fg != NULL){
-                while (fg != NULL) {
-                    response_body += buffer;
-                    fg = fgets(buffer, sizeof(buffer), pipe);
-                }
+            
+            while (fg != NULL) {
+                response_body += buffer;
+                fg = fgets(buffer, sizeof(buffer), pipe);
             }
-            else{
+
+            int status = pclose(pipe);
+            if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
                 std::string response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
                     std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
                 sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
                 request.setCode(500);
                 close (client_socket);
+                exit(1);
                 return (500);
             }
-            pclose(pipe);
             sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
-            request.setCode(200);
+            close(client_socket);
+            exit(0);
         } else {
             std::string response_body = getFileContent(getErrorPage(500, serverConfig));
             if (response_body.empty())
-                std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+                std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
             sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
-            request.setCode(500);
+            close(client_socket);
+            exit(1);
         }
-        close (client_socket);
-        return (request.getCode());
+    } else {
+        int status;
+        time_t start_time = time(NULL);
+        while (true) {
+            int result = waitpid(pid, &status, WNOHANG);
+            if (result == pid) {
+                break;
+            }
+
+            if (time(NULL) - start_time > 5) {
+                kill(pid, SIGKILL);
+                std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+                if (response_body.empty())
+                    std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution timed out.</p></body></html>";
+                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                close(client_socket);
+                request.setCode(500);
+                return 500;
+            }
+            usleep(100000);
+        }
+
+        close(client_socket);
+        return request.getCode();
+    }
 }
 
 int postResponse(Request request, int client_socket, const ServerConfig& serverConfig){

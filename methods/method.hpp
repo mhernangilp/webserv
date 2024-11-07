@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "signal.h"
 
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig);
 int deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig);

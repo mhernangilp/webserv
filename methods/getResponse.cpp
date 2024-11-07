@@ -137,7 +137,7 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
 }
 
 int cgi_char(const std::string& str, char ch) {
-    for (int i = str.size() - 2; i >= 0; --i) {
+    for (int i = str.size() - 1; i >= 0; --i) {
         if (str[i] == ch) {
             return i;
         }
@@ -149,11 +149,16 @@ int check_reps(std::string string){
     int ump = 0;
     int sign = 0;
 
+    if (string.size() < 7 || string[0] == '=')
+        return (-1);
     for (int i = 0; string[i]; i++){
         if (string[i] == '=')
             sign++;
-        if (string[i] == '&')
+        if (string[i] == '&'){
             ump++;
+            if (string[i + 1] == '=')
+                return -1;
+        }
     }
     if (ump != 1 || sign != 2)
         return -1;
@@ -177,17 +182,18 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
                     if (!check_reps(variables)){
                         std::string v1 = variables.substr(variables.find('=') + 1, variables.find('&') - variables.find('=') - 1);
                         std::string v2 = variables.substr(cgi_char(variables.c_str(), '=') + 1, variables.size());
-                        request.setCode(exc_script(request, serverConfig, client_socket, v1, v2));
-                        return (request.getCode());
+                        if (v1.size() > 0 && v2.size() > 0){
+                            request.setCode(exc_script(request, serverConfig, client_socket, v1, v2));
+                            return (request.getCode());
+                        }
                     }
-                    else{
-                        std::string response_body = getFileContent(getErrorPage(400, serverConfig));
-                        if (response_body.empty())
-                            std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
-                        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
-                        request.setCode(400);
-                        return (400);
-                    }
+                    
+                    std::string response_body = getFileContent(getErrorPage(400, serverConfig));
+                    if (response_body.empty())
+                        std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
+                    sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+                    request.setCode(400);
+                    return (400);
                 }
             }
     }
@@ -336,7 +342,14 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 close (client_socket);
                 return (script);
             }
-            // Si no se encuentra el archivo solicitado, cargar y devolver el archivo 404.html
+            if (fileExists(filePath)){
+                std::string contentType = getContentType(filePath);
+                sendHttpResponse(client_socket, "200 OK", contentType, "");
+                close (client_socket);
+                request.setCode(200);
+                return (request.getCode());
+            }
+
             std::string notFoundPagePath = getErrorPage(404, serverConfig);
             std::string notFoundPageContent = getFileContent(notFoundPagePath);
 

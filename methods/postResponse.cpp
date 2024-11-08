@@ -3,19 +3,34 @@
 int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name) {
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
     std::string response_body;
-
     std::string exists = "NO";
-    if (fileExists(serverConfig.root + "/fake-gallery/" + name))
+    
+    if (fileExists(serverConfig.root + "/fake-gallery/" + name)) 
         exists = "YES";
     
-    std::string command = "php " + script_path + " " + "\"" + name + "\"" + " " + exists;
+    std::string command = "php " + script_path + " \"" + name + "\" " + exists;
+    int pipefd[2];
+    
+    if (pipe(pipefd) == -1) {
+        std::cerr << "Pipe creation failed!" << std::endl;
+        response_body = getFileContent(getErrorPage(500, serverConfig));
+        if (response_body.empty())
+            response_body = "<html><body><h1>500 Internal Server Error</h1><p>Pipe creation failed.</p></body></html>";
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        request.setCode(500);
+        close(client_socket);
+        return 500;
+    }
+
     pid_t pid = fork();
     
     if (pid < 0) {
         std::cerr << "Fork failed!" << std::endl;
-        std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+        close(pipefd[0]);
+        close(pipefd[1]);
+        response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
-            std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Fork failed.</p></body></html>";
+            response_body = "<html><body><h1>500 Internal Server Error</h1><p>Fork failed.</p></body></html>";
         sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
         request.setCode(500);
         close(client_socket);
@@ -23,42 +38,51 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
     }
 
     if (pid == 0) {
+        close(pipefd[0]);
         FILE* pipe = popen(command.c_str(), "r");
-        
+
         if (pipe) {
             char buffer[128];
-            char *fg = fgets(buffer, sizeof(buffer), pipe);
-            
-            while (fg != NULL) {
+            while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
                 response_body += buffer;
-                fg = fgets(buffer, sizeof(buffer), pipe);
             }
 
             int status = pclose(pipe);
-            if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-                std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+            int return_code = (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? 200 : 500;
+            
+            write(pipefd[1], &return_code, sizeof(return_code));
+            close(pipefd[1]);
+
+            if (return_code == 500) {
+                response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
-                    std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
+                    response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution failed.</p></body></html>";
                 sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
-                request.setCode(500);
-                close (client_socket);
-                exit(1);
-                return (500);
+            } else {
+                sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
             }
-            sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
             close(client_socket);
             exit(0);
         } else {
-            std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+            int error_code = 500;
+            response_body = getFileContent(getErrorPage(500, serverConfig));
             if (response_body.empty())
-                std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
+                response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
             sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+            
+            write(pipefd[1], &error_code, sizeof(error_code));
+            close(pipefd[1]);
             close(client_socket);
             exit(1);
         }
     } else {
+
+        close(pipefd[1]);
+
         int status;
+        int response_code = 500;
         time_t start_time = time(NULL);
+
         while (true) {
             int result = waitpid(pid, &status, WNOHANG);
             if (result == pid) {
@@ -67,19 +91,22 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
 
             if (time(NULL) - start_time > 5) {
                 kill(pid, SIGKILL);
-                std::string response_body = getFileContent(getErrorPage(500, serverConfig));
+                response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
-                    std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution timed out.</p></body></html>";
+                    response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution timed out.</p></body></html>";
                 sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                close(pipefd[0]);
                 close(client_socket);
                 request.setCode(500);
                 return 500;
             }
             usleep(100000);
         }
-
+        read(pipefd[0], &response_code, sizeof(response_code));
+        close(pipefd[0]);
+        request.setCode(response_code);
         close(client_socket);
-        return request.getCode();
+        return response_code;
     }
 }
 

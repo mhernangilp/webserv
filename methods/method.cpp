@@ -97,7 +97,23 @@ void sendHttpResponse(int client_socket, const std::string& statusCode, const st
         "Connection: close\r\n"
         "\r\n" + body;
     
-    send(client_socket, response.c_str(), response.size(), 0);
+    // Configura el pollfd para el socket de salida
+    struct pollfd pfd;
+    pfd.fd = client_socket;
+    pfd.events = POLLOUT; // Monitorear el evento de escritura
+
+    // Usar poll() para verificar si el socket está listo para escribir
+    int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
+    if (ret > 0 && (pfd.revents & POLLOUT)) {
+        // El socket está listo para escribir
+        send(client_socket, response.c_str(), response.size(), 0);
+    } else if (ret == 0) {
+        // Timeout, no está listo para escribir
+        std::cerr << "Timeout: El socket no está listo para escribir.\n";
+    } else {
+        // Error en poll()
+        std::cerr << "Error en poll().\n";
+    }
 }
 
 bool urlRecoil(const std::string &url){

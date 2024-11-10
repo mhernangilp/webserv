@@ -5,12 +5,19 @@ int main(int argc, char **argv)
 {
 	Server server;
 	ConfigParser parser;
+	const char *config_file;
 
-	if (argc != 2) {
-		std::cerr << RED << "Error: number of arguments not valid\n" << RESET << "Usage: ./webserv <config file>" << std::endl;
+	if (argc > 2) {
+		std::cerr << RED << "Error: number of arguments not valid\n" << RESET << "Usage: ./webserv [config file]" << std::endl;
 		return 1;
 	}
-	if (parser.parseConfig(argv[1]) == 1)
+	if (argc == 1) {
+		config_file = "config/default.conf";
+		std::cout << LIGHT_BLUE << "[INFO] Using Default Config File" << RESET << std::endl;
+	} else {
+		config_file = argv[1];
+	}
+	if (parser.parseConfig(config_file) == 1)
 		return 2; 
 	ServerConfig config = parser.getServerConfig();
 	config.print();

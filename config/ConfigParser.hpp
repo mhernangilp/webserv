@@ -17,6 +17,12 @@ class ConfigParser {
         ServerConfig server;
         LocationConfig current_location;
         std::string current_block;
+        bool found_listen;
+        bool found_server_name;
+        bool found_host;
+        bool found_max_body_size;
+        bool found_root;
+        bool found_index;
 
         int parseKey(const std::string& key, std::istringstream& iss);
         void trim(std::string& s);

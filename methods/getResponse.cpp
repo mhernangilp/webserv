@@ -269,9 +269,6 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
     struct stat fileStat;
     std::string url = request.getUrl();
     std::string newUrl = url;
-    struct pollfd pfd;
-    pfd.fd = client_socket;
-    pfd.events = POLLOUT;
 
     // Eliminar barras adicionales al final de la URL
     while (url.size() > 1 && url[url.size() - 1] == '/') {
@@ -286,17 +283,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
             "Content-Length: 0\r\n"
             "Connection: close\r\n"
             "\r\n";
-        int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-        if (ret > 0 && (pfd.revents & POLLOUT)) {
-            // El socket está listo para escribir
-            send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
-        } else if (ret == 0) {
-            // Timeout, no está listo para escribir
-            std::cerr << "Timeout: El socket no está listo para escribir.\n";
-        } else {
-            // Error en poll()
-            std::cerr << "Error en poll().\n";
-        }
+        send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
         request.setCode(301);
         close(client_socket);
         return 301;
@@ -327,17 +314,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Content-Length: 0\r\n"
                     "Connection: close\r\n"
                     "\r\n";
-                int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-                if (ret > 0 && (pfd.revents & POLLOUT)) {
-                    // El socket está listo para escribir
-                    send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
-                } else if (ret == 0) {
-                    // Timeout, no está listo para escribir
-                    std::cerr << "Timeout: El socket no está listo para escribir.\n";
-                } else {
-                    // Error en poll()
-                    std::cerr << "Error en poll().\n";
-                }
+                send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
                 request.setCode(302);
                 close(client_socket);
                 return request.getCode();
@@ -395,17 +372,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(forbiddenPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + forbiddenPageContent;
-            int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-            if (ret > 0 && (pfd.revents & POLLOUT)) {
-                // El socket está listo para escribir
-                send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
-            } else if (ret == 0) {
-                // Timeout, no está listo para escribir
-                std::cerr << "Timeout: El socket no está listo para escribir.\n";
-            } else {
-                // Error en poll()
-                std::cerr << "Error en poll().\n";
-            }
+            send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
             request.setCode(403);
         } else if (indexContent.empty() && autoindex_allowed(filePath, serverConfig)) {
             // Si no hay un archivo index.html pero el autoindex está habilitado, generar el autoindex
@@ -416,17 +383,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(autoIndexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + autoIndexContent;
-            int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-            if (ret > 0 && (pfd.revents & POLLOUT)) {
-                // El socket está listo para escribir
-                send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
-            } else if (ret == 0) {
-                // Timeout, no está listo para escribir
-                std::cerr << "Timeout: El socket no está listo para escribir.\n";
-            } else {
-                // Error en poll()
-                std::cerr << "Error en poll().\n";
-            }
+            send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
             request.setCode(200);
         } else {
             // Si existe el index.html, devolverlo
@@ -436,17 +393,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(indexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + indexContent;
-            int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-            if (ret > 0 && (pfd.revents & POLLOUT)) {
-                // El socket está listo para escribir
-                send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
-            } else if (ret == 0) {
-                // Timeout, no está listo para escribir
-                std::cerr << "Timeout: El socket no está listo para escribir.\n";
-            } else {
-                // Error en poll()
-                std::cerr << "Error en poll().\n";
-            }
+            send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
             request.setCode(200);
         }
     } else {
@@ -479,17 +426,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Connection: close\r\n"
                     "\r\n" +
                     notFoundPageContent;
-                int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-                if (ret > 0 && (pfd.revents & POLLOUT)) {
-                    // El socket está listo para escribir
-                    send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
-                } else if (ret == 0) {
-                    // Timeout, no está listo para escribir
-                    std::cerr << "Timeout: El socket no está listo para escribir.\n";
-                } else {
-                    // Error en poll()
-                    std::cerr << "Error en poll().\n";
-                }
+                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
                 request.setCode(404);
             } else {
                 std::string notFoundResponse = 
@@ -498,17 +435,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                     "Connection: close\r\n"
                     "\r\n" + notFoundPageContent;
-                int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-                if (ret > 0 && (pfd.revents & POLLOUT)) {
-                    // El socket está listo para escribir
-                    send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
-                } else if (ret == 0) {
-                    // Timeout, no está listo para escribir
-                    std::cerr << "Timeout: El socket no está listo para escribir.\n";
-                } else {
-                    // Error en poll()
-                    std::cerr << "Error en poll().\n";
-                }
+                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
                 request.setCode(404);
             }
         } else {
@@ -519,17 +446,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(fileContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + fileContent;
-            int ret = poll(&pfd, 1, 1000);  // 1000 ms de timeout
-            if (ret > 0 && (pfd.revents & POLLOUT)) {
-                // El socket está listo para escribir
-                send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
-            } else if (ret == 0) {
-                // Timeout, no está listo para escribir
-                std::cerr << "Timeout: El socket no está listo para escribir.\n";
-            } else {
-                // Error en poll()
-                std::cerr << "Error en poll().\n";
-            }
+            send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
             request.setCode(200);
         }
     }

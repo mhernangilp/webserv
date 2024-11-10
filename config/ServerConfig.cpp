@@ -82,15 +82,6 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
         return false;
     }
 
-   for (int i = 0; method_location[i] != NULL; ++i) {
-        if (strcmp(method_location[i], "/") == 0){
-            std::string met = methods[i];
-            if (met.find(m) != std::string::npos) {
-                return true;
-            }
-        }
-    }
-
     for (int i = 0; method_location[i] != NULL; ++i) {
 
         if (strcmp(method_location[i], location.c_str()) == 0) {
@@ -113,8 +104,20 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
                     std::string met = methods[i];
                     if (met.find(m) != std::string::npos)
                         return true;
-                    else
+                    else if (met.find('G') != std::string::npos || met.find('P') != std::string::npos || met.find('D') != std::string::npos)
                         return false;
+                    else{
+                        for (int i = 0; method_location[i] != NULL; ++i) {
+                            if (strcmp(method_location[i], "/") == 0){
+                                std::string met = methods[i];
+                                if (met.find(m) != std::string::npos) {
+                                    return true;
+                                }
+                                else
+                                    return false;
+                            }
+                        }
+                    }
                 }
                 dir = findCharFromEnd(dir_location, '/');
                 dir_location = location.substr(0, dir);

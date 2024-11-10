@@ -8,6 +8,7 @@
 #include <vector>
 #include <sstream>
 #include "../Utils.hpp"
+#include <sys/wait.h>
 
 std::string getContentType(const std::string& filePath) {
     if (filePath.find(".html") != std::string::npos) return "text/html";

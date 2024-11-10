@@ -121,6 +121,14 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
         if (bytesRead > 0) {
             clients[client_fd - 4].setLastReadTime(time(NULL));  // Reiniciar temporizador en caso de actividad
             accumulated_request.append(buffer, bytesRead);
+
+            // Verificar si el tamaño acumulado supera el límite permitido
+            if (accumulated_request.size() > configServer.client_max_body_size) {
+                std::cerr << "[INFO] Client " << client_fd - 3 << " exceeded maximum body size. Closing connection ..." << std::endl;
+                close(client_fd);
+                removeClient(client_fd);
+                return false;
+            }
         } else if (bytesRead <= 0) {
             // Cliente desconectado o error
             std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;

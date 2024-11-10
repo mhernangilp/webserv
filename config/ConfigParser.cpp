@@ -62,7 +62,6 @@ int ConfigParser::parseConfig(const std::string& filename) {
         } else if (key == "location") {
             std::string location_path;
             iss >> location_path;
-            std::cout << RED << "LOCATION PATH '" << location_path << "'" << std::endl;
             current_block = "location";
             current_location = LocationConfig();
             if (location_path != "/")
@@ -104,6 +103,12 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             iss >> server.port;
             if (server.port < 1 || server.port > 65535) {
                 std::cerr << RED << "[ERR] port value not valid ";
+                return 1;
+            }
+        } else if (key == "max_body_size") {
+            iss >> server.client_max_body_size;
+            if (server.client_max_body_size < 1024) {
+                std::cerr << RED << "[ERR] min value is 1024 bytes ";
                 return 1;
             }
         } else if (key == "host") {

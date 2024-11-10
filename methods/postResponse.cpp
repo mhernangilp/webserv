@@ -1,4 +1,6 @@
 #include "method.hpp"
+#include <sys/wait.h>
+#include <cstdlib>
 
 int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name) {
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";

@@ -27,22 +27,20 @@
 #define BLUE       "\033[34m"
 #define LIGHT_BLUE "\033[38;5;51m"
 
-
 class Server {
     private:
         int sockfd;
         std::vector<pollfd> poll_fds;
         std::vector<Client> clients;
-        ServerConfig config;
+        const std::vector<ServerConfig>& config;
 
     public:
-        Server();
+        Server(const std::vector<ServerConfig>& config);
         ~Server();
 
-        void    start(const ServerConfig& config);
-        void    setConfig(ServerConfig& config);
-        bool    processClientRequest(int client_fd, const ServerConfig& config);
-        void    removeClient(int client_fd);
+        void start(const ServerConfig& config);
+        bool processClientRequest(int client_fd, const ServerConfig& config);
+        void removeClient(int client_fd);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

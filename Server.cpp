@@ -2,7 +2,7 @@
 
 #define POLL_TIMEOUT_MS 1000  // Timeout de 1 segundos
 
-Server::Server() {}
+Server::Server(const std::vector<ServerConfig>& config) : config(config) {} 
 
 Server::~Server() {}
 
@@ -173,11 +173,6 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
     close(client_fd);
     removeClient(client_fd);
     return false;
-}
-
-void    Server::setConfig(ServerConfig& config)
-{
-	this->config = config;
 }
 
 void Server::removeClient(int client_fd) {

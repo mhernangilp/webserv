@@ -14,9 +14,10 @@
 
 class ConfigParser {
     private:
-        ServerConfig server;
+        std::vector<ServerConfig> servers;
         LocationConfig current_location;
         std::string current_block;
+        ServerConfig current_server;
         bool found_listen;
         bool found_server_name;
         bool found_host;
@@ -30,5 +31,5 @@ class ConfigParser {
         
     public:
         int parseConfig(const std::string& filename);
-        ServerConfig getServerConfig() const;
+        const std::vector<ServerConfig>& getServerConfig() const;
 };

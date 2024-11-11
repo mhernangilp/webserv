@@ -223,7 +223,7 @@ void ConfigParser::trim(std::string& s) {
         s = s.substr(0, end + 1);
 }
 
-const std::vector<ServerConfig>& ConfigParser::getServerConfig() const {
+std::vector<ServerConfig>& ConfigParser::getServerConfig() {
     return servers;
 }
 

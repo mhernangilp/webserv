@@ -31,5 +31,5 @@ class ConfigParser {
         
     public:
         int parseConfig(const std::string& filename);
-        const std::vector<ServerConfig>& getServerConfig() const;
+        std::vector<ServerConfig>& getServerConfig();
 };

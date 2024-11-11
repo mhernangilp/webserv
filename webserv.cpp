@@ -18,13 +18,15 @@ int main(int argc, char **argv)
 	}
 	if (parser.parseConfig(config_file) == 1)
 		return 2; 
-	const std::vector<ServerConfig>& config = parser.getServerConfig();
+	std::vector<ServerConfig>& config = parser.getServerConfig();
 	for (size_t i = 0; i < config.size(); i++) {
 		std::cout << LIGHT_BLUE << "SERVER " << i << ":" << RESET << std::endl;
 		config[i].print();
 	}
 	Server server(config);
-	//config.struct_method_allowed();
+	for (size_t i = 0; i < config.size(); i++) {
+		config[i].struct_method_allowed();
+	}
 	//server.start(config);
 	return (0);
 }

@@ -9,7 +9,6 @@ Server::~Server() {}
 void Server::start() {
     int sockfds[config.size()];
     sockaddr_in sockaddrs[config.size()];
-    sec_poll_fds.resize(config.size());
     clients.resize(config.size());
 
 	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
@@ -82,30 +81,30 @@ void Server::start() {
         if (main_poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
-		}
-        
-        if (main_poll_count == 0) {
+		} else if (main_poll_count == 0) {
 			// Timeout: No hay actividad, pero el servidor continúa ejecutándose
 			continue;
 		}
 
         for (size_t i = 0; i < main_poll_fds.size(); i++) {
             if (main_poll_fds[i].revents & POLLIN) {
-                int connection = accept(sockfds[i], (struct sockaddr*)&sockaddrs[i], (socklen_t*)&addrlen);
-                if (connection < 0) {
-                    std::cerr << "[ERR] Failed to grab connection" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
+                if (i < config.size()) {
+                    int connection = accept(sockfds[i], (struct sockaddr*)&sockaddrs[i], (socklen_t*)&addrlen);
+                    if (connection < 0) {
+                        std::cerr << "[ERR] Failed to grab connection" << std::endl;
+                        exit(EXIT_FAILURE);
+                    }
 
-                pollfd new_client_pollfd;
-                new_client_pollfd.fd = connection;
-                new_client_pollfd.events = POLLIN;
-                sec_poll_fds[i].push_back(new_client_pollfd);
-                Client new_client;
-                new_client.setIndex(new_client_pollfd.fd);
-                new_client.setLastReadTime(time(NULL));
-                clients[i].push_back(new_client);
-                std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted [" << config[i].host << ":" << config[i].port << "], Set Identifier " << new_client_pollfd.fd - config.size() - 2 << RESET << std::endl;
+                    pollfd new_client_pollfd;
+                    new_client_pollfd.fd = connection;
+                    new_client_pollfd.events = POLLIN;
+                    main_poll_fds.push_back(new_client_pollfd);
+                    Client new_client;
+                    new_client.setIndex(new_client_pollfd.fd);
+                    new_client.setLastReadTime(time(NULL));
+                    clients[i].push_back(new_client);
+                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted [" << config[i].host << ":" << config[i].port << "], Set Identifier " << new_client_pollfd.fd - config.size() - 2 << RESET << std::endl;
+                }
             }
         }
 

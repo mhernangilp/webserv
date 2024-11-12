@@ -5,66 +5,43 @@ int ConfigParser::parseConfig(const std::string& filename) {
     std::ifstream config_file(filename.c_str());
     std::string line;
     int brace_count = 0;
-    bool finished = false;
     bool passed_server = false;
-    found_listen = false;
-    found_host = false;
-    found_index = false;
-    found_max_body_size = false;
-    found_root = false;
-    found_server_name = false;
 
     if (!config_file.is_open()) {
         std::cout << ORANGE << "[WARN] Cannot open config file, using default parameters" << RESET << std::endl;
+        return 1;
     }
 
     while (std::getline(config_file, line)) {
         line = line.substr(0, line.find("#"));
         trim(line);
         if (line.empty()) continue;
-        if (!line.empty() && finished) {
-            std::cerr << RED << "[ERR] characters out of server scope" << RESET << std::endl;
-            return 1;
-        }
 
         if (line[line.size() - 1] != ';' && line[line.size() - 1] != '{' && line[line.size() - 1] != '}') {
             std::cerr << RED << "[ERR] Missing semicolon in line: '" << line << "'" << RESET << std::endl;
             return 1;
         }
 
-        for (size_t i = 0; i < line.size(); ++i) {
-            if (line[i] == '{') {
-                brace_count++;
-            } else if (line[i] == '}') {
-                brace_count--;
-            }
+        for (size_t i = 0; i < line.size(); i++) {
+            char ch = line[i];
+            if (ch == '{') brace_count++;
+            if (ch == '}') brace_count--;
         }
 
-        int semicolon_count = 0;
-        for (size_t i = 0; i < line.size(); ++i) {
-            if (line[i] == ';') {
-                semicolon_count++;
-            }
+        if (brace_count == 0 && passed_server) {
+            servers.push_back(current_server);
+            current_server = ServerConfig();
+            passed_server = false;
         }
-        if (semicolon_count > 1) {
-            std::cerr << RED << "[ERR] Too many semicolons in line: '" << line << "'" << RESET << std::endl;
-            return 1;
-        }
-
-        if (brace_count == 0)
-            finished = true;
 
         std::istringstream iss(line);
         std::string key;
         iss >> key;
 
-        if (key != "server" && passed_server == false) {
-            std::cerr << RED << "[ERR] invalid basic config file sintax" << RESET << std::endl;
-            return 1;
-        }
         if (key == "server") {
             current_block = "server";
             passed_server = true;
+            found_listen = found_host = found_index = found_max_body_size = found_root = found_server_name = false;
         } else if (key == "location") {
             std::string location_path;
             iss >> location_path;
@@ -74,14 +51,13 @@ int ConfigParser::parseConfig(const std::string& filename) {
                 current_location.location = normalizeUrl(location_path);
             else
                 current_location.location = location_path;
-            if (current_location.location != "/" && server.locations.find(current_location.location) != server.locations.end()) {
+            if (current_location.location != "/" && current_server.locations.find(current_location.location) != current_server.locations.end()) {
                 std::cerr << RED << "[ERR] found duplicate location" << RESET << std::endl;
                 return 1;
             }
         } else if (key == "}") {
             if (current_block == "location") {
-                server.addLocation(current_location.location, current_location);
-                std::cout << RESET;
+                current_server.addLocation(current_location.location, current_location);
                 current_block = "server";
             }
         } else {
@@ -97,9 +73,8 @@ int ConfigParser::parseConfig(const std::string& filename) {
         return 1;
     }
 
-    if (access((server.root + server.index).c_str(), R_OK)) {
-        std::cerr << RED << "[ERR] Invalid index." << server.root << server.index << RESET << std::endl;
-        return 1;
+    if (passed_server) {
+        servers.push_back(current_server);
     }
 
     return 0;
@@ -115,19 +90,19 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 return 1;
             }
             found_listen = true;
-            iss >> server.port;
-            if (server.port < 1 || server.port > 65535) {
+            iss >> current_server.port;
+            if (current_server.port < 1 || current_server.port > 65535) {
                 std::cerr << RED << "[ERR] port value not valid ";
                 return 1;
             }
         } else if (key == "max_body_size") {
             if (found_max_body_size) {
-                std::cerr << RED << "[ERR] client maz body size already set ";
+                std::cerr << RED << "[ERR] client max body size already set ";
                 return 1;
             }
             found_max_body_size = true;
-            iss >> server.client_max_body_size;
-            if (server.client_max_body_size < 1024) {
+            iss >> current_server.client_max_body_size;
+            if (current_server.client_max_body_size < 1024) {
                 std::cerr << RED << "[ERR] min value is 1024 bytes ";
                 return 1;
             }
@@ -140,9 +115,9 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             std::string temp_host;
             iss >> temp_host;
             if (!temp_host.empty()) {
-                server.host = temp_host.substr(0, temp_host.size() - 1);
+                current_server.host = temp_host.substr(0, temp_host.size() - 1);
             }
-            if (!isValidIP(server.host)) {
+            if (!isValidIP(current_server.host)) {
                 std::cerr << RED << "[ERR] Invalid IP address";
                 return 1;
             }
@@ -155,7 +130,7 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             std::string temp_server_name;
             iss >> temp_server_name;
             if (!temp_server_name.empty()) {
-                server.server_name = temp_server_name.substr(0, temp_server_name.size() - 1);
+                current_server.server_name = temp_server_name.substr(0, temp_server_name.size() - 1);
             }
         } else if (key == "error_page") {
             int error_type;
@@ -166,11 +141,11 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 std::cerr << RED << "[ERR] error type not valid ";
                 return 1;
             }
-            if (server.error_page.find(error_type) != server.error_page.end()) {
+            if (current_server.error_page.find(error_type) != current_server.error_page.end()) {
                 std::cerr << RED << "[ERR] duplicate custom error page ";
                 return 1;
             }
-            server.error_page[error_type] = normalizeUrl(error_path.substr(0, error_path.size() - 1));
+            current_server.error_page[error_type] = normalizeUrl(error_path.substr(0, error_path.size() - 1));
         } else if (key == "root") {
             if (found_root) {
                 std::cerr << RED << "[ERR] root already set ";
@@ -180,7 +155,7 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             std::string temp_root;
             iss >> temp_root;
             if (!temp_root.empty()) {
-                server.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1)) + "/";
+                current_server.root = normalizeUrl(temp_root.substr(0, temp_root.size() - 1)) + "/";
             }
         } else if (key == "index") {
             if (found_index) {
@@ -191,7 +166,7 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             std::string temp_index;
             iss >> temp_index;
             if (!temp_index.empty()) {
-                server.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
+                current_server.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
             }
         }
     } else if (current_block == "location") {
@@ -248,8 +223,8 @@ void ConfigParser::trim(std::string& s) {
         s = s.substr(0, end + 1);
 }
 
-ServerConfig ConfigParser::getServerConfig() const {
-    return server;
+std::vector<ServerConfig>& ConfigParser::getServerConfig() {
+    return servers;
 }
 
 bool ConfigParser::isValidIP(const std::string& ip) {

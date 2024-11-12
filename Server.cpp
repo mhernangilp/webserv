@@ -6,59 +6,66 @@ Server::Server(const std::vector<ServerConfig>& config) : config(config) {}
 
 Server::~Server() {}
 
-void Server::start(const ServerConfig& config) {
+void Server::start() {
+    int sockfds[config.size()];
+    sockaddr_in sockaddrs[config.size()];
+
 	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
 
-    // Create the socket
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		std::cerr << RED << "Error. Failed to create socket" << RESET << std::endl;
-    	exit(EXIT_FAILURE);
-	}
-
-    // Set socket options
-    int opt = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        std::cerr << RED << "Error. Failed to set socket options" << RESET << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Configuration to assign the port to the socket
-    sockaddr_in sockaddr;
-    memset(&sockaddr, 0, sizeof(sockaddr));
-    int addrlen = sizeof(sockaddr);
-    sockaddr.sin_family = AF_INET;
-    
-    // Configurar la dirección IP
-    if (inet_pton(AF_INET, config.host.c_str(), &sockaddr.sin_addr) <= 0) {
-        // Si la conversión a IP falla, intentar como un nombre de host
-        struct hostent* he = gethostbyname(config.host.c_str());
-        if (he == NULL) {
-            std::cerr << RED << "Error. Invalid host: " << config.host << RESET << std::endl;
+    for (size_t i = 0; i < config.size(); i++) {
+        // Create the socket
+        if ((sockfds[i] = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            std::cerr << RED << "Error. Failed to create socket" << RESET << std::endl;
             exit(EXIT_FAILURE);
         }
-        sockaddr.sin_addr = *(struct in_addr*)he->h_addr_list[0];
+
+        // Set socket options
+        int opt = 1;
+        if (setsockopt(sockfds[i], SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+            std::cerr << RED << "Error. Failed to set socket options" << RESET << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Configuration to assign the port to the socket
+        memset(&sockaddrs[i], 0, sizeof(sockaddrs[i]));
+        //int addrlen = sizeof(sockaddr);
+        sockaddrs[i].sin_family = AF_INET;
+        
+        // Configurar la dirección IP
+        if (inet_pton(AF_INET, config[i].host.c_str(), &sockaddrs[i].sin_addr) <= 0) {
+            // Si la conversión a IP falla, intentar como un nombre de host
+            struct hostent* he = gethostbyname(config[i].host.c_str());
+            if (he == NULL) {
+                std::cerr << RED << "Error. Invalid host: " << config[i].host << RESET << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            sockaddrs[i].sin_addr = *(struct in_addr*)he->h_addr_list[0];
+        }
+        sockaddrs[i].sin_port = htons(config[i].port);
+
+        // Bind the port to the socket
+        if (bind(sockfds[i], (struct sockaddr *) &sockaddrs[i], sizeof(sockaddrs[i])) < 0) {
+            std::cerr << RED << "Error. Failed to bind to port " << config[i].port << RESET << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Set the socket in listening mode
+        if (listen(sockfds[i], 3) < 0) {
+            std::cerr << RED << "Error. Failed to listen on socket" << RESET << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Add the main socket to the poll file descriptors list
+        pollfd main_socket_pollfd;
+        main_socket_pollfd.fd = sockfds[i];
+        main_socket_pollfd.events = POLLIN;
+        poll_fds.push_back(main_socket_pollfd);
     }
-	sockaddr.sin_port = htons(config.port);
 
-    // Bind the port to the socket
-	if (bind(sockfd, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0) {
-		std::cerr << RED << "Error. Failed to bind to port " << config.port << RESET << std::endl;
-    	exit(EXIT_FAILURE);
-	}
-
-    // Set the socket in listening mode
-	if (listen(sockfd, 3) < 0) {
-		std::cerr << RED << "Error. Failed to listen on socket" << RESET << std::endl;
-    	exit(EXIT_FAILURE);
-	}
-
-    // Add the main socket to the poll file descriptors list
-	pollfd main_socket_pollfd;
-	main_socket_pollfd.fd = sockfd;
-	main_socket_pollfd.events = POLLIN;
-	poll_fds.push_back(main_socket_pollfd);
-
-	std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config.server_name << "] Host[" << config.host << "] Port[" << config.port <<"]" << RESET << std::endl;
+    for (size_t i = 0; i < config.size(); i++) {
+	    std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config[i].server_name << "] Host[" << config[i].host << "] Port[" << config[i].port <<"]" << RESET << std::endl;
+    }
+    /*
     while (1) {
 		int poll_count = poll(poll_fds.data(), poll_fds.size(), POLL_TIMEOUT_MS);
 		
@@ -105,7 +112,7 @@ void Server::start(const ServerConfig& config) {
 				}
 			}
 		}
-	}
+	}*/
 }
 
 bool Server::processClientRequest(int client_fd, const ServerConfig& configServer) {

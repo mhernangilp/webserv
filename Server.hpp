@@ -29,7 +29,6 @@
 
 class Server {
     private:
-        int sockfd;
         std::vector<pollfd> poll_fds;
         std::vector<Client> clients;
         const std::vector<ServerConfig>& config;
@@ -38,7 +37,7 @@ class Server {
         Server(const std::vector<ServerConfig>& config);
         ~Server();
 
-        void start(const ServerConfig& config);
+        void start();
         bool processClientRequest(int client_fd, const ServerConfig& config);
         void removeClient(int client_fd);
 };

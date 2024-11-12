@@ -27,6 +27,6 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < config.size(); i++) {
 		config[i].struct_method_allowed();
 	}
-	//server.start(config);
+	server.start();
 	return (0);
 }

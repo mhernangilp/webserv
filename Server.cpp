@@ -9,6 +9,8 @@ Server::~Server() {}
 void Server::start() {
     int sockfds[config.size()];
     sockaddr_in sockaddrs[config.size()];
+    sec_poll_fds.resize(config.size());
+    clients.resize(config.size());
 
 	std::cout << LIGHT_BLUE << "[INFO] Initializing Server ..." << RESET << std::endl;
 
@@ -28,7 +30,6 @@ void Server::start() {
 
         // Configuration to assign the port to the socket
         memset(&sockaddrs[i], 0, sizeof(sockaddrs[i]));
-        //int addrlen = sizeof(sockaddr);
         sockaddrs[i].sin_family = AF_INET;
         
         // Configurar la dirección IP
@@ -59,36 +60,59 @@ void Server::start() {
         pollfd main_socket_pollfd;
         main_socket_pollfd.fd = sockfds[i];
         main_socket_pollfd.events = POLLIN;
-        poll_fds.push_back(main_socket_pollfd);
+        main_poll_fds.push_back(main_socket_pollfd);
     }
+    int addrlen = sizeof(sockaddrs[0]);
 
     for (size_t i = 0; i < config.size(); i++) {
 	    std::cout << LIGHT_BLUE << "[INFO] Server Online: ServerName[" << config[i].server_name << "] Host[" << config[i].host << "] Port[" << config[i].port <<"]" << RESET << std::endl;
     }
-    /*
+
     while (1) {
-		int poll_count = poll(poll_fds.data(), poll_fds.size(), POLL_TIMEOUT_MS);
+		int main_poll_count = poll(main_poll_fds.data(), main_poll_fds.size(), POLL_TIMEOUT_MS);
 		
-        for (size_t i = 0; i < clients.size(); i++) {
+        /*for (size_t i = 0; i < clients.size(); i++) {
             if (time(NULL) - clients[i].getLastReadTime() > 5) {
                 std::cout << "[INFO] Client " << clients[i].getIndex() - 3 << " Time Out, Closing Connection ..." << std::endl;
                 close(clients[i].getIndex());
                 removeClient(clients[i].getIndex());
             }
-        }
+        }*/
 
-        if (poll_count < 0) {
+        if (main_poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
     		exit(EXIT_FAILURE);
-		} else if (poll_count == 0) {
+		}
+        
+        if (main_poll_count == 0) {
 			// Timeout: No hay actividad, pero el servidor continúa ejecutándose
 			continue;
 		}
 
-		for (size_t i = 0; i < poll_fds.size(); i++) {
+        for (size_t i = 0; i < main_poll_fds.size(); i++) {
+            if (main_poll_fds[i].revents & POLLIN) {
+                int connection = accept(sockfds[i], (struct sockaddr*)&sockaddrs[i], (socklen_t*)&addrlen);
+                if (connection < 0) {
+                    std::cerr << "[ERR] Failed to grab connection" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+
+                pollfd new_client_pollfd;
+                new_client_pollfd.fd = connection;
+                new_client_pollfd.events = POLLIN;
+                sec_poll_fds[i].push_back(new_client_pollfd);
+                Client new_client;
+                new_client.setIndex(new_client_pollfd.fd);
+                new_client.setLastReadTime(time(NULL));
+                clients[i].push_back(new_client);
+                std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted [" << config[i].host << ":" << config[i].port << "], Set Identifier " << new_client_pollfd.fd - config.size() - 2 << RESET << std::endl;
+            }
+        }
+
+		/*for (size_t i = 0; i < poll_fds.size(); i++) {
 			if (poll_fds[i].revents & POLLIN) { // Check if there is read activity
-				if (poll_fds[i].fd == sockfd) { // New incoming connection
-					int connection = accept(sockfd, (struct sockaddr*)&sockaddr, (socklen_t*)&addrlen);
+				if (poll_fds[i].fd == sockfds[0]) { // New incoming connection
+					int connection = accept(sockfds[0], (struct sockaddr*)&sockaddrs[0], (socklen_t*)&addrlen);
 					if (connection < 0) {
 						std::cerr << "[ERR] Failed to grab connection" << std::endl;
 						exit(EXIT_FAILURE);
@@ -112,7 +136,7 @@ void Server::start() {
 				}
 			}
 		}
-	}*/
+	}
 }
 
 bool Server::processClientRequest(int client_fd, const ServerConfig& configServer) {
@@ -201,6 +225,6 @@ void Server::removeClient(int client_fd) {
     }
     if (changed != 2) {
         std::cerr << "[ERR] Error on client deletion" << std::endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);*/
     }
 }

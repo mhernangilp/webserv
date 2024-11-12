@@ -29,8 +29,9 @@
 
 class Server {
     private:
-        std::vector<pollfd> poll_fds;
-        std::vector<Client> clients;
+        std::vector<pollfd> main_poll_fds;
+        std::vector<std::vector<pollfd> > sec_poll_fds;
+        std::vector<std::vector<Client> > clients;
         const std::vector<ServerConfig>& config;
 
     public:

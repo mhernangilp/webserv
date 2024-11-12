@@ -70,13 +70,15 @@ void Server::start() {
     while (1) {
 		int main_poll_count = poll(main_poll_fds.data(), main_poll_fds.size(), POLL_TIMEOUT_MS);
 		
-        /*for (size_t i = 0; i < clients.size(); i++) {
-            if (time(NULL) - clients[i].getLastReadTime() > 5) {
-                std::cout << "[INFO] Client " << clients[i].getIndex() - 3 << " Time Out, Closing Connection ..." << std::endl;
-                close(clients[i].getIndex());
-                removeClient(clients[i].getIndex());
+        for (size_t i = 0; i < clients.size(); i++) {
+            for (size_t j = 0; j < clients[i].size(); j++) {
+                if (time(NULL) - clients[i][j].getLastReadTime() > 5) {
+                    std::cout << "[INFO] Client " << clients[i][j].getIndex() - config.size() - 2 << " Time Out, Closing Connection ..." << std::endl;
+                    close(clients[i][j].getIndex());
+                    removeClient(clients[i][j].getIndex(), i);
+                }
             }
-        }*/
+        }
 
         if (main_poll_count < 0) {
 			std::cerr << "[ERR] Poll failed" << std::endl;
@@ -103,42 +105,28 @@ void Server::start() {
                     new_client.setIndex(new_client_pollfd.fd);
                     new_client.setLastReadTime(time(NULL));
                     clients[i].push_back(new_client);
+                    
                     std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted [" << config[i].host << ":" << config[i].port << "], Set Identifier " << new_client_pollfd.fd - config.size() - 2 << RESET << std::endl;
+                } else {
+                    int server_number = -1;
+                    for (size_t j = 0; j < clients.size(); j++) {
+                        for (size_t k = 0; k < clients[j].size(); k++) {
+                            if (clients[j][k].getIndex() == main_poll_fds[i].fd)
+                                server_number = j;
+                        }
+                    }
+                    if (server_number == -1) {
+                        std::cerr << RED << "[ERR] internal error when locating server_number" << RESET << std::endl;
+                        exit(EXIT_FAILURE); 
+                    }
+                    processClientRequest(main_poll_fds[i].fd, server_number);
                 }
             }
         }
-
-		/*for (size_t i = 0; i < poll_fds.size(); i++) {
-			if (poll_fds[i].revents & POLLIN) { // Check if there is read activity
-				if (poll_fds[i].fd == sockfds[0]) { // New incoming connection
-					int connection = accept(sockfds[0], (struct sockaddr*)&sockaddrs[0], (socklen_t*)&addrlen);
-					if (connection < 0) {
-						std::cerr << "[ERR] Failed to grab connection" << std::endl;
-						exit(EXIT_FAILURE);
-					}
-
-					// Add the new client socket to poll
-					pollfd new_client_pollfd;
-					new_client_pollfd.fd = connection;
-					new_client_pollfd.events = POLLIN;
-					poll_fds.push_back(new_client_pollfd);
-                    Client new_client;
-                    new_client.setIndex(new_client_pollfd.fd);
-                    new_client.setLastReadTime(time(NULL));
-                    clients.push_back(new_client);
-                    std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted, Set Identifier " << new_client_pollfd.fd - 3 << RESET << std::endl;
-
-				} else { // Read data from the client
-					bool clientConnected = processClientRequest(poll_fds[i].fd, config);
-					if (!clientConnected)
-						continue;
-				}
-			}
-		}
 	}
 }
 
-bool Server::processClientRequest(int client_fd, const ServerConfig& configServer) {
+void Server::processClientRequest(int client_fd, int server_number) {
     std::string accumulated_request;
     char buffer[16384];
     int bytesRead;
@@ -149,22 +137,22 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
         bytesRead = read(client_fd, buffer, sizeof(buffer));
 
         if (bytesRead > 0) {
-            clients[client_fd - 4].setLastReadTime(time(NULL));  // Reiniciar temporizador en caso de actividad
+            clients[server_number][client_fd - config.size() - 3].setLastReadTime(time(NULL));  // Reiniciar temporizador en caso de actividad
             accumulated_request.append(buffer, bytesRead);
 
             // Verificar si el tamaño acumulado supera el límite permitido
-            if (accumulated_request.size() > configServer.client_max_body_size) {
-                std::cerr << "[INFO] Client " << client_fd - 3 << " exceeded maximum body size. Closing connection ..." << std::endl;
+            if (accumulated_request.size() > config[server_number].client_max_body_size) {
+                std::cerr << "[INFO] Client " << client_fd - config.size() - 2 << " exceeded maximum body size. Closing connection ..." << std::endl;
                 close(client_fd);
-                removeClient(client_fd);
-                return false;
+                removeClient(client_fd, server_number);
+                return ;
             }
         } else if (bytesRead <= 0) {
             // Cliente desconectado o error
-            std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
+            std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
-            removeClient(client_fd);
-            return false;
+            removeClient(client_fd, server_number);
+            return ;
         }
 
         if (!headersRead) {
@@ -193,37 +181,37 @@ bool Server::processClientRequest(int client_fd, const ServerConfig& configServe
     }
 
     Request request(accumulated_request);
-    clients[client_fd - 4].setRequest(request);
+    clients[server_number][client_fd - config.size() - 3].setRequest(request);
 
-    std::cout << BLUE << "[INFO] Message received from client " << client_fd - 3 << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
+    std::cout << BLUE << "[INFO] Message received from client " << client_fd - config.size() - 2 << ", Method = <"<< request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    method(clients[client_fd - 4].getRequest(), client_fd, configServer);
+    method(clients[server_number][client_fd - config.size() - 3].getRequest(), client_fd, config[server_number]);
 
-    std::cout << "[INFO] Client " << client_fd - 3 << " Disconnected, Closing Connection ..." << std::endl;
+    std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
     close(client_fd);
-    removeClient(client_fd);
-    return false;
+    removeClient(client_fd, server_number);
+    return ;
 }
 
-void Server::removeClient(int client_fd) {
+void Server::removeClient(int client_fd, int server_number) {
     int changed = 0;
 
-	for (size_t i = 0; i < poll_fds.size(); i++) {
-        if (poll_fds[i].fd == client_fd) {
-            poll_fds.erase(poll_fds.begin() + i);
+	for (size_t i = 0; i < main_poll_fds.size(); i++) {
+        if (main_poll_fds[i].fd == client_fd) {
+            main_poll_fds.erase(main_poll_fds.begin() + i);
             changed++;
             break;
         }
     }
-    for (size_t i = 0; i < clients.size(); i++) {
-        if (clients[i].getIndex() == client_fd) {
-            clients.erase(clients.begin() + i);
+    for (size_t i = 0; i < clients[server_number].size(); i++) {
+        if (clients[server_number][i].getIndex() == client_fd) {
+            clients[server_number].erase(clients[server_number].begin() + i);
             changed++;
             break;
         }
     }
     if (changed != 2) {
         std::cerr << "[ERR] Error on client deletion" << std::endl;
-        exit(EXIT_FAILURE);*/
+        exit(EXIT_FAILURE);
     }
 }

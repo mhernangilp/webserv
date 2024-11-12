@@ -38,8 +38,8 @@ class Server {
         ~Server();
 
         void start();
-        bool processClientRequest(int client_fd, const ServerConfig& config);
-        void removeClient(int client_fd);
+        void processClientRequest(int client_fd, int server_number);
+        void removeClient(int client_fd, int server_number);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

@@ -58,7 +58,7 @@ void Server::start() {
         // Add the main socket to the poll file descriptors list
         pollfd main_socket_pollfd;
         main_socket_pollfd.fd = sockfds[i];
-        main_socket_pollfd.events = POLLIN | POLLOUT;
+        main_socket_pollfd.events = POLLIN;
         main_poll_fds.push_back(main_socket_pollfd);
     }
     int addrlen = sizeof(sockaddrs[0]);
@@ -89,7 +89,7 @@ void Server::start() {
 		}
 
         for (size_t i = 0; i < main_poll_fds.size(); i++) {
-            if (main_poll_fds[i].revents & POLLIN || main_poll_fds[i].revents & POLLOUT) {
+            if (main_poll_fds[i].revents & POLLIN) {
                 if (i < config.size()) {
                     int connection = accept(sockfds[i], (struct sockaddr*)&sockaddrs[i], (socklen_t*)&addrlen);
                     if (connection < 0) {

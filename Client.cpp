@@ -21,7 +21,7 @@ int Client::getIndex() {
     return index;
 }
 
-void Client::setLastReadTime(long int time) {
+void Client::setLastReadTime(time_t time) {
     lastReadTime = time;
 }
 long int Client::getLastReadTime() {

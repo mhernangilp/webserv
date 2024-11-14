@@ -6,11 +6,34 @@
 #include <string>
 #include <cstring>
 
-Request::Request() {}
+Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0) {}
 
 Request::Request(const std::string& raw_request) {
     parseRequest(raw_request);
 }
+
+Request::Request(const Request& other)
+    : method(other.method),
+      url(other.url),
+      http_version(other.http_version),
+      host(other.host),
+      body(other.body),
+      file_name(other.file_name)
+{}
+
+
+Request& Request::operator=(const Request& other) {
+    if (this != &other) {
+        this->method = other.method;
+        this->url = other.url;
+        this->http_version = other.http_version;
+        this->host = other.host;
+        this->body = other.body;
+        this->file_name = other.file_name;
+    }
+    return *this;
+}
+
 
 void Request::parseRequest(const std::string& raw_request) {
     std::istringstream stream(raw_request);

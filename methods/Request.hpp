@@ -24,6 +24,8 @@ class Request {
     public:
     Request();
         Request(const std::string& raw_request);
+        Request(const Request& other);
+        Request& operator=(const Request& other);
 
         std::string getMethod() const;
         std::string getUrl() const;

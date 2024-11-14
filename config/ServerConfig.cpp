@@ -1,5 +1,6 @@
 #include "ServerConfig.hpp"
 #include <cstring>
+#include <sys/stat.h>
 
 ServerConfig::ServerConfig() : port(8002), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
     LocationConfig location = LocationConfig();
@@ -75,6 +76,18 @@ int findCharFromEnd(const std::string& str, char ch) {
     return -1;
 }
 
+bool checkDirectory(const std::string& path) {
+    struct stat buffer;
+    if (stat(path.c_str(), &buffer) == 0) {
+        return S_ISDIR(buffer.st_mode);
+    }
+    return false;
+}
+
+bool exists(const std::string& filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+}
 
 bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
 
@@ -123,6 +136,13 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
                 dir_location = location.substr(0, dir);
             }
         }
+    }
+    std::string dir_location = location;
+    while (dir_location.size() > 0){
+        int dir = findCharFromEnd(dir_location, '/');
+        dir_location = location.substr(0, dir);
+        if (exists(root + dir_location) && checkDirectory(root + dir_location))
+            return false;
     }
     return true;
 }

@@ -40,8 +40,10 @@ class Server {
         void start();
         void processClientRequest(int client_fd, int server_number);
         void removeClient(int client_fd, int server_number);
+        void max_body(int client_fd, int server_number);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);
+void body_limit(int client_socket, const ServerConfig& serverConfig);
 
 #endif

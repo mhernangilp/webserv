@@ -137,22 +137,31 @@ void Server::processClientRequest(int client_fd, int server_number) {
         bytesRead = read(client_fd, buffer, sizeof(buffer));
 
         if (bytesRead > 0) {
-            clients[server_number][client_fd - config.size() - 3].setLastReadTime(time(NULL));  // Reiniciar temporizador en caso de actividad
-            accumulated_request.append(buffer, bytesRead);
+            size_t index = client_fd - config.size() - 3;
 
-            // Verificar si el tamaño acumulado supera el límite permitido
-            if (accumulated_request.size() > config[server_number].client_max_body_size) {
-                std::cerr << "[INFO] Client " << client_fd - config.size() - 2 << " exceeded maximum body size. Closing connection ..." << std::endl;
+            // Verificar que el índice esté dentro de los límites del contenedor `clients[server_number]`
+            if (index >= 0 && index < clients[server_number].size()) {
+                clients[server_number][index].setLastReadTime(time(NULL)); // Reiniciar temporizador en caso de actividad
+                accumulated_request.append(buffer, bytesRead);
+
+                // Verificar si el tamaño acumulado supera el límite permitido
+                if (accumulated_request.size() > config[server_number].client_max_body_size) {
+                    std::cerr << "[INFO] Client " << client_fd - config.size() - 2 << " exceeded maximum body size. Closing connection ..." << std::endl;
+                    close(client_fd);
+                    removeClient(client_fd, server_number);
+                    return;
+                }
+            } else {
                 close(client_fd);
                 removeClient(client_fd, server_number);
-                return ;
+                return;
             }
         } else if (bytesRead <= 0) {
             // Cliente desconectado o error
             std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
             close(client_fd);
             removeClient(client_fd, server_number);
-            return ;
+            return;
         }
 
         if (!headersRead) {

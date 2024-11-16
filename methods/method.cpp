@@ -15,6 +15,15 @@ void method(Request request, int socket, const ServerConfig& serverConfig) {
     }
 }
 
+void body_limit(int client_socket, const ServerConfig& serverConfig){
+    std::string response_body = getFileContent(getErrorPage(413, serverConfig));
+        if (response_body.empty())
+            std::string response_body = "<html><body><h1>413 Payload Too Large</h1><p>Body size limit.</p></body></html>";
+        sendHttpResponse(client_socket, "413 Payload Too Large", "text/html", response_body);
+        std::cout << BLUE << "[INFO] Response sent to client " << client_socket << ", Stats " << 413 << RESET << std::endl;
+        return ;
+}
+
 std::string getFileContent(const std::string& filePath) {
     std::ifstream file(filePath.c_str());
     if (!file.is_open()) {

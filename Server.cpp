@@ -146,7 +146,8 @@ void Server::processClientRequest(int client_fd, int server_number) {
 
                 // Verificar si el tamaño acumulado supera el límite permitido
                 if (accumulated_request.size() > config[server_number].client_max_body_size) {
-                    std::cerr << "[INFO] Client " << client_fd - config.size() - 2 << " exceeded maximum body size. Closing connection ..." << std::endl;
+                    std::cerr << "[INFO] Client " << client_fd - config.size() - 2 << " exceeded maximum body size "  << accumulated_request.size() << ". Closing connection ..." <<  std::endl;
+                    max_body(client_fd, server_number);
                     close(client_fd);
                     removeClient(client_fd, server_number);
                     return;
@@ -256,4 +257,42 @@ void Server::removeClient(int client_fd, int server_number) {
         std::cerr << "[ERR] Error on client deletion" << std::endl;
         exit(EXIT_FAILURE);
     }
+}
+
+void Server::max_body(int client_fd, int server_number){
+    // Aquí cambiamos el pollfd para el cliente para poder escribir (POLLOUT)
+    pollfd client_pollfd;
+    client_pollfd.fd = client_fd;
+    client_pollfd.events = POLLOUT;
+
+    int poll_result = poll(&client_pollfd, 1, POLL_TIMEOUT_MS);
+
+    if (poll_result < 0) {
+        std::cerr << "[ERR] Poll failed for client " << client_fd << std::endl;
+        close(client_fd);
+        removeClient(client_fd, server_number);
+        return;
+    }
+
+    if (poll_result == 0) {
+        std::cerr << "[ERR] Poll timed out for client " << client_fd << std::endl;
+        return;
+    }
+
+    if (client_pollfd.revents & POLLOUT) {
+        // El socket está listo para escribir, enviar la respuesta
+        body_limit(client_fd, config[server_number]);
+
+        // Después de escribir la respuesta, volvemos a POLLIN para escuchar nuevas peticiones
+        for (size_t i = 0; i < main_poll_fds.size(); i++) {
+            if (main_poll_fds[i].fd == client_fd) {
+                main_poll_fds[i].events = POLLIN;  // Volver a POLLIN para escuchar nuevas peticiones
+                break;
+            }
+        }
+    } else {
+        std::cerr << "[ERR] Socket not ready for writing, skipping send for client " << client_fd << std::endl;
+    }
+
+    std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
 }

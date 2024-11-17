@@ -102,8 +102,8 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             }
             found_max_body_size = true;
             iss >> current_server.client_max_body_size;
-            if (current_server.client_max_body_size < 1024) {
-                std::cerr << RED << "[ERR] min value is 1024 bytes ";
+            if (current_server.client_max_body_size <= 0) {
+                std::cerr << RED << "[ERR] min value is 1 byte ";
                 return 1;
             }
         } else if (key == "host") {

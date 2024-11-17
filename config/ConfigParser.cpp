@@ -8,7 +8,7 @@ int ConfigParser::parseConfig(const std::string& filename) {
     bool passed_server = false;
 
     if (!config_file.is_open()) {
-        std::cout << ORANGE << "[WARN] Cannot open config file, using default parameters" << RESET << std::endl;
+        std::cout << RED << "[ERR] Cannot open config file" << RESET << std::endl;
         return 1;
     }
 

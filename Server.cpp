@@ -108,18 +108,29 @@ void Server::start() {
                     
                     std::cout << LIGHT_BLUE <<"[INFO] New Connection Accepted [" << config[i].host << ":" << config[i].port << "], Set Identifier " << new_client_pollfd.fd - config.size() - 2 << RESET << std::endl;
                 } else {
-                    int server_number = -1;
-                    for (size_t j = 0; j < clients.size(); j++) {
-                        for (size_t k = 0; k < clients[j].size(); k++) {
-                            if (clients[j][k].getIndex() == main_poll_fds[i].fd)
-                                server_number = j;
-                        }
-                    }
+                    int server_number = locateClientServer(main_poll_fds[i].fd);
                     if (server_number == -1) {
                         std::cerr << RED << "[ERR] internal error when locating server_number" << RESET << std::endl;
-                        exit(EXIT_FAILURE); 
+                        exit(EXIT_FAILURE);
                     }
                     processClientRequest(main_poll_fds[i].fd, server_number);
+                }
+            }
+        }
+        for (size_t i = 0; i < main_poll_fds.size(); i++) {
+            if ((main_poll_fds[i].revents & POLLOUT) && pending_responses.count(main_poll_fds[i].fd)) {
+                int client_fd = main_poll_fds[i].fd;
+                int server_number = locateClientServer(client_fd);
+
+                if (server_number != -1) {
+                    Request& client_request = pending_responses[client_fd];
+                    method(client_request, client_fd, config[server_number]);
+
+                    // Cerrar y limpiar después de enviar
+                    std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                    close(client_fd);
+                    removeClient(client_fd, server_number);
+                    pending_responses.erase(client_fd); // Limpiar respuesta pendiente
                 }
             }
         }
@@ -233,4 +244,15 @@ void Server::removeClient(int client_fd, int server_number) {
 void Server::max_body(int client_fd, int server_number){
     body_limit(client_fd, config[server_number]);
     std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+}
+
+int Server::locateClientServer(int client_fd) {
+    for (size_t server_number = 0; server_number < clients.size(); ++server_number) {
+        for (size_t client_index = 0; client_index < clients[server_number].size(); ++client_index) {
+            if (clients[server_number][client_index].getIndex() == client_fd) {
+                return server_number; // Retorna el servidor al que pertenece el cliente
+            }
+        }
+    }
+    return -1; // No se encontró el cliente
 }

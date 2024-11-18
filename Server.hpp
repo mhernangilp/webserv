@@ -43,6 +43,7 @@ class Server {
         void processClientRequest(int client_fd, int server_number);
         void removeClient(int client_fd, int server_number);
         void max_body(int client_fd, int server_number);
+        int locateClientServer(int client_fd);
 };
 
 void method(Request request, int socket, const ServerConfig& serverConfig);

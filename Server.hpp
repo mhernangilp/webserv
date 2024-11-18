@@ -12,6 +12,7 @@
 #include <cerrno>
 #include "Client.hpp"
 #include "config/ServerConfig.hpp"
+#include "methods/Request.hpp"
 #include <cstring>
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -32,6 +33,7 @@ class Server {
         std::vector<pollfd> main_poll_fds;
         std::vector<std::vector<Client> > clients;
         const std::vector<ServerConfig>& config;
+        std::map<int, Request> pending_responses;
 
     public:
         Server(const std::vector<ServerConfig>& config);

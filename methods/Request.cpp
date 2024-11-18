@@ -6,7 +6,7 @@
 #include <string>
 #include <cstring>
 
-Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0) {}
+Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0), server(0) {}
 
 Request::Request(const std::string& raw_request) {
     parseRequest(raw_request);
@@ -122,4 +122,6 @@ std::string Request::getBody() const { return body; }
 std::string Request::getFileName() const { return file_name; }
 int Request::getCode() { return code; }
 void Request::setCode(int code) { this->code = code; }
+int Request::getServer() { return server; }
+void Request::setServer(int server) { this->server = server; }
 void Request::setUrl(std::string url) { this->url = url; }

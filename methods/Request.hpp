@@ -20,6 +20,7 @@ class Request {
         std::string body;
         std::string file_name;
         int code;
+        int server;
 
     public:
     Request();
@@ -36,6 +37,8 @@ class Request {
         std::string getFileName() const;
         int getCode();
         void setCode(int code);
+        int getServer();
+        void setServer(int code);
         void setUrl(std::string url);
 
     private:

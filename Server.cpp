@@ -124,7 +124,7 @@ void Server::start() {
 
                 if (server_number != -1) {
                     Request& client_request = pending_responses[client_fd];
-                    method(client_request, client_fd, config[server_number]);
+                    method(client_request, client_fd, config[server_number], client_fd - config.size() - 2);
 
                     // Cerrar y limpiar después de enviar
                     std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
@@ -151,7 +151,7 @@ void Server::processClientRequest(int client_fd, int server_number) {
             size_t index = client_fd - config.size() - 3;
 
             // Verificar que el índice esté dentro de los límites del contenedor `clients[server_number]`
-            if (index >= 0 && index < clients[server_number].size()) {
+            if (index < clients[server_number].size()) {
                 clients[server_number][index].setLastReadTime(time(NULL)); // Reiniciar temporizador en caso de actividad
                 accumulated_request.append(buffer, bytesRead);
 
@@ -243,7 +243,7 @@ void Server::removeClient(int client_fd, int server_number) {
 }
 
 void Server::max_body(int client_fd, int server_number){
-    body_limit(client_fd, config[server_number]);
+    body_limit(client_fd, config[server_number], client_fd - config.size() - 2);
     std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
 }
 

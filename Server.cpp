@@ -116,9 +116,7 @@ void Server::start() {
                     processClientRequest(main_poll_fds[i].fd, server_number);
                 }
             }
-        }
-        for (size_t i = 0; i < main_poll_fds.size(); i++) {
-            if ((main_poll_fds[i].revents & POLLOUT) && pending_responses.count(main_poll_fds[i].fd)) {
+            else if ((main_poll_fds[i].revents & POLLOUT) && pending_responses.count(main_poll_fds[i].fd)) {
                 int client_fd = main_poll_fds[i].fd;
                 int server_number = locateClientServer(client_fd);
 

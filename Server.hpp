@@ -46,7 +46,7 @@ class Server {
         int locateClientServer(int client_fd);
 };
 
-void method(Request request, int socket, const ServerConfig& serverConfig);
-void body_limit(int client_socket, const ServerConfig& serverConfig);
+void method(Request request, int socket, const ServerConfig& serverConfig, int id);
+void body_limit(int client_socket, const ServerConfig& serverConfig, int id);
 
 #endif

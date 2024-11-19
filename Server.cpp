@@ -209,11 +209,12 @@ void Server::processClientRequest(int client_fd, int server_number) {
 
     pending_responses[client_fd] = clients[server_number][client_fd - config.size() - 3].getRequest();
 
-    Request& client_request = pending_responses[client_fd];
-    method(client_request, client_fd, config[server_number]);
-    std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
-    close(client_fd);
-    removeClient(client_fd, server_number);
+    for (size_t i = 0; i < main_poll_fds.size(); i++) {
+        if (main_poll_fds[i].fd == client_fd) {
+            main_poll_fds[i].events = POLLOUT;
+            break;
+        }
+    }
     return ;
 }
 

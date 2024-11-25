@@ -2,7 +2,7 @@
 #include <sys/wait.h>
 #include <cstdlib>
 
-int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name) {
+int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, Server& server) {
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
     std::string response_body;
     std::string exists = "NO";
@@ -18,7 +18,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
         response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>500 Internal Server Error</h1><p>Pipe creation failed.</p></body></html>";
-        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
         request.setCode(500);
         close(client_socket);
         return 500;
@@ -33,7 +33,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
         response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>500 Internal Server Error</h1><p>Fork failed.</p></body></html>";
-        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
         request.setCode(500);
         close(client_socket);
         return 500;
@@ -59,9 +59,9 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
                 response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
                     response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution failed.</p></body></html>";
-                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
             } else {
-                sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+                sendHttpResponse(client_socket, "200 OK", "text/html", response_body, server, serverConfig);
             }
             close(client_socket);
             exit(0);
@@ -70,7 +70,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
             response_body = getFileContent(getErrorPage(500, serverConfig));
             if (response_body.empty())
                 response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
-            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
             
             write(pipefd[1], &error_code, sizeof(error_code));
             close(pipefd[1]);
@@ -96,7 +96,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
                 response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
                     response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution timed out.</p></body></html>";
-                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
                 close(pipefd[0]);
                 close(client_socket);
                 request.setCode(500);
@@ -104,7 +104,10 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
             }
             usleep(100000);
         }
-        read(pipefd[0], &response_code, sizeof(response_code));
+        if (read(pipefd[0], &response_code, sizeof(response_code)) <= 0) {
+            std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+            server.removeClient(client_socket, serverConfig.number);
+        }
         close(pipefd[0]);
         request.setCode(response_code);
         close(client_socket);
@@ -112,7 +115,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
     }
 }
 
-int postResponse(Request request, int client_socket, const ServerConfig& serverConfig){
+int postResponse(Request request, int client_socket, const ServerConfig& serverConfig, Server& server){
 
     std::string body = request.getBody();
     std::string name = request.getFileName();
@@ -125,7 +128,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(getErrorPage(405, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
-        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
+        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body, server, serverConfig);
         request.setCode(405);
         close(client_socket);
         return (405);
@@ -134,7 +137,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(getErrorPage(400, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
-        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+        sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body, server, serverConfig);
         request.setCode(400);
         close(client_socket);
         return (400);
@@ -143,7 +146,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(getErrorPage(401, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>401 Bad Request</h1><p>No header specified.</p></body></html>";
-        sendHttpResponse(client_socket, "401 Bad Request", "text/html", response_body);
+        sendHttpResponse(client_socket, "401 Bad Request", "text/html", response_body, server, serverConfig);
         request.setCode(401);
         close(client_socket);
         return (401);
@@ -152,14 +155,14 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(getErrorPage(415, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>415 Bad Request</h1><p>No boundary specified.</p></body></html>";
-        sendHttpResponse(client_socket, "415 Bad Request", "text/html", response_body);
+        sendHttpResponse(client_socket, "415 Bad Request", "text/html", response_body, server, serverConfig);
         request.setCode(415);
         close(client_socket);
         return (415);
     }
 
     if (request.getUrl() == "/cgi-bin/checker.php")
-        return (cgi_function(request, serverConfig, client_socket, name));
+        return (cgi_function(request, serverConfig, client_socket, name, server));
 
     std::string full_path = serverConfig.root + "fake-gallery/" + name;
     std::string base_name = name;
@@ -183,7 +186,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open file for writing.</p></body></html>";
-        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
         request.setCode(500);
     } else{
         outFile << body;
@@ -192,7 +195,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::string response_body = getFileContent(serverConfig.root + "upload/upload_done.html");
         if (response_body.empty())
             std::string response_body = "<html><body><h1>POST Request Successful</h1><p>File has been uploaded successfully.</p></body></html>";
-        sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+        sendHttpResponse(client_socket, "200 OK", "text/html", response_body, server, serverConfig);
         request.setCode(200);
     }
     close (client_socket);

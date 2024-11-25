@@ -122,7 +122,7 @@ void Server::start() {
 
                 if (server_number != -1) {
                     Request& client_request = pending_responses[client_fd];
-                    method(client_request, client_fd, config[server_number], client_fd - config.size() - 2);
+                    method(client_request, client_fd, config[server_number], client_fd - config.size() - 2, *this);
 
                     // Cerrar y limpiar después de enviar
                     std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
@@ -162,6 +162,7 @@ void Server::processClientRequest(int client_fd, int server_number) {
                     return;
                 }
             } else {
+                std::cout << "NOSE" << std::endl;
                 close(client_fd);
                 removeClient(client_fd, server_number);
                 return;
@@ -218,6 +219,7 @@ void Server::processClientRequest(int client_fd, int server_number) {
 
 
 void Server::removeClient(int client_fd, int server_number) {
+    std::cout << "REMUEVO" << std::endl;
     int changed = 0;
 
 	for (size_t i = 0; i < main_poll_fds.size(); i++) {
@@ -241,7 +243,7 @@ void Server::removeClient(int client_fd, int server_number) {
 }
 
 void Server::max_body(int client_fd, int server_number){
-    body_limit(client_fd, config[server_number], client_fd - config.size() - 2);
+    body_limit(client_fd, config[server_number], client_fd - config.size() - 2, *this);
     std::cout << "[INFO] Client " << client_fd - config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
 }
 

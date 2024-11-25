@@ -5,6 +5,7 @@
 
 class ServerConfig {
 public:
+    int number;
     int port;
     std::string host;
     std::string server_name;

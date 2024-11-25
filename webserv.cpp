@@ -20,7 +20,9 @@ int main(int argc, char **argv)
 		return 2; 
 	std::vector<ServerConfig>& config = parser.getServerConfig();
 	for (size_t i = 0; i < config.size(); i++) {
-		std::cout << LIGHT_BLUE << "SERVER " << i << ":" << RESET << std::endl;
+		config[i].number = i;
+		
+		std::cout << LIGHT_BLUE << "SERVER " << config[i].number << ":" << RESET << std::endl;
 		config[i].print();
 	}
 	Server server(config);

@@ -146,10 +146,14 @@ void Server::processClientRequest(int client_fd, int server_number) {
         bytesRead = read(client_fd, buffer, sizeof(buffer));
 
         if (bytesRead > 0) {
-            size_t index = client_fd - config.size() - 3;
+            int index = -1;
 
-            // Verificar que el índice esté dentro de los límites del contenedor `clients[server_number]`
-            if (index < clients[server_number].size()) {
+            for (size_t i = 0; i < clients[server_number].size(); i++) {
+                if (clients[server_number][i].getIndex() == client_fd)
+                    index = i;
+            }
+
+            if (index != -1) {
                 clients[server_number][index].setLastReadTime(time(NULL)); // Reiniciar temporizador en caso de actividad
                 accumulated_request.append(buffer, bytesRead);
 

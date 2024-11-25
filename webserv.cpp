@@ -28,5 +28,8 @@ int main(int argc, char **argv)
 		config[i].struct_method_allowed();
 	}
 	server.start();
+	for (size_t i = 0; i < config.size(); i++) {
+		config[i].clearMethods();
+	}
 	return (0);
 }

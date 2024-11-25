@@ -67,6 +67,25 @@ void ServerConfig::struct_method_allowed() {
     methods = method_allowed;
 }
 
+void ServerConfig::clearMethods() {
+    if (methods) {
+        for (int i = 0; methods[i] != NULL; ++i) {
+            delete[] methods[i];
+        }
+        delete[] methods;
+        methods = NULL; // Evitar accesos no válidos
+    }
+
+    if (method_location) {
+        for (int i = 0; method_location[i] != NULL; ++i) {
+            delete[] method_location[i];
+        }
+        delete[] method_location;
+        method_location = NULL;
+    }
+}
+
+
 int findCharFromEnd(const std::string& str, char ch) {
     for (int i = str.size() - 2; i >= 0; --i) {
         if (str[i] == ch) {

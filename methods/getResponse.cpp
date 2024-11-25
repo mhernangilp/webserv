@@ -350,8 +350,8 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         }
     }
 
-    if (newUrl == "/") {
-        filePath = serverConfig.root + "index.html";
+    if (newUrl == "") {
+        filePath = serverConfig.root + serverConfig.index;
     } else {
         filePath = serverConfig.root + newUrl;
     }

@@ -162,7 +162,6 @@ void Server::processClientRequest(int client_fd, int server_number) {
                     return;
                 }
             } else {
-                std::cout << "NOSE" << std::endl;
                 close(client_fd);
                 removeClient(client_fd, server_number);
                 return;
@@ -219,7 +218,6 @@ void Server::processClientRequest(int client_fd, int server_number) {
 
 
 void Server::removeClient(int client_fd, int server_number) {
-    std::cout << "REMUEVO" << std::endl;
     int changed = 0;
 
 	for (size_t i = 0; i < main_poll_fds.size(); i++) {

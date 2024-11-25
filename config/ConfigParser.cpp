@@ -84,6 +84,10 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
     std::string value;
 
     if (current_block == "server") {
+        if (key != "listen" && key != "max_body_size" && key != "host" && key != "server_name" && key != "error_page" && key != "root" && key != "index") {
+            std::cerr << RED << "[ERR] config not valid ";
+            return 1;
+        }
         if (key == "listen") {
             if (found_listen) {
                 std::cerr << RED << "[ERR] port already set ";
@@ -170,6 +174,10 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             }
         }
     } else if (current_block == "location") {
+        if (key != "root" && key != "autoindex" && key != "allow_methods" && key != "index" && key != "return") {
+            std::cerr << RED << "[ERR] config not valid ";
+            return 1;
+        }
         if (key == "root") {
             std::string temp_root;
             iss >> temp_root;
@@ -183,10 +191,14 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 current_location.autoindex = temp_autoindex.substr(0, temp_autoindex.size() - 1);
             }
             if (current_location.autoindex != "on" && current_location.autoindex != "off") {
-                std::cerr << RED << "Error. autoindex value not valid ";
+                std::cerr << RED << "[ERR] autoindex value not valid ";
                 return 1;
             }
         } else if (key == "allow_methods") {
+            if (current_location.allow_methods.size() > 0) {
+                std::cerr << RED << "[ERR] allow_methods already set ";
+                return 1;
+            }
             std::string method;
             while (iss >> method) {
                 if (method[method.size() - 1] == ';')
@@ -200,7 +212,7 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
                 current_location.index = normalizeUrl(temp_index.substr(0, temp_index.size() - 1));
             }
             if (!current_location.index.empty() && current_location.index[0] == '/') {
-                std::cerr << RED << "Error. location index can't be absolute ";
+                std::cerr << RED << "[ERR] location index can't be absolute ";
                 return 1;
             } 
         } else if (key == "return") {

@@ -1,25 +1,25 @@
 #include "method.hpp"
 #include "../Server.hpp"
 
-void method(Request request, int socket, const ServerConfig& serverConfig, int id) {
+void method(Request request, int socket, const ServerConfig& serverConfig, int id, Server& server) {
     if (request.getMethod() == "GET" || request.getMethod() == "DELETE" || request.getMethod() == "POST"){
         int code = 0;			
         if (request.getMethod() == "GET")
-            code = getResponse(request, socket, serverConfig);
+            code = getResponse(request, socket, serverConfig, server);
         else if (request.getMethod() == "DELETE")
-            code = deleteResponse(request, socket, serverConfig);
+            code = deleteResponse(request, socket, serverConfig, server);
         else if (request.getMethod() == "POST")
-            code = postResponse(request, socket, serverConfig);
+            code = postResponse(request, socket, serverConfig, server);
 
         std::cout << BLUE << "[INFO] Response sent to client " << id << ", Stats " << code << RESET << std::endl;
     }
 }
 
-void body_limit(int client_socket, const ServerConfig& serverConfig, int id){
+void body_limit(int client_socket, const ServerConfig& serverConfig, int id, Server& server){
     std::string response_body = getFileContent(getErrorPage(413, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>413 Payload Too Large</h1><p>Body size limit.</p></body></html>";
-        sendHttpResponse(client_socket, "413 Payload Too Large", "text/html", response_body);
+        sendHttpResponse(client_socket, "413 Payload Too Large", "text/html", response_body, server, serverConfig);
         std::cout << BLUE << "[INFO] Response sent to client " << id << ", Stats " << 413 << RESET << std::endl;
         return ;
 }
@@ -98,7 +98,7 @@ int checkdir(const std::string& url, int client_socket) {
     return (0);
 }
 
-void sendHttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body) {
+void sendHttpResponse(int client_socket, const std::string& statusCode, const std::string& contentType, const std::string& body, Server& server, const ServerConfig& serverConfig) {
     std::string response = 
         "HTTP/1.1 " + statusCode + "\r\n"
         "Content-Type: " + contentType + "\r\n"
@@ -106,7 +106,11 @@ void sendHttpResponse(int client_socket, const std::string& statusCode, const st
         "Connection: close\r\n"
         "\r\n" + body;
     
-    send(client_socket, response.c_str(), response.size(), 0);
+    if (send(client_socket, response.c_str(), response.size(), 0) <= 0) {
+        std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+        close(client_socket);
+        server.removeClient(client_socket, serverConfig.number);
+    }
 }
 
 bool urlRecoil(const std::string &url){

@@ -98,7 +98,7 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
-int exc_script(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists) {
+int exc_script(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists, Server& server) {
     std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
     std::string response_body;
     std::string command = "php " + script_path + " " + name + " " + exists;
@@ -109,7 +109,7 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
         std::string response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>500 Internal Server Error</h1><p>Pipe creation failed.</p></body></html>";
-        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
         request.setCode(500);
         return 500;
     }
@@ -123,7 +123,7 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
         std::string response_body = getFileContent(getErrorPage(500, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>500 Internal Server Error</h1><p>Fork failed.</p></body></html>";
-        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+        sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
         request.setCode(500);
         return 500;
     }
@@ -151,9 +151,9 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
                 response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
                     response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution failed.</p></body></html>";
-                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
             } else {
-                sendHttpResponse(client_socket, "200 OK", "text/html", response_body);
+                sendHttpResponse(client_socket, "200 OK", "text/html", response_body, server, serverConfig);
             }
             exit(0);
         } else {
@@ -161,7 +161,7 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
             response_body = getFileContent(getErrorPage(500, serverConfig));
             if (response_body.empty())
                 response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
-            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+            sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
             
             write(pipefd[1], &error_code, sizeof(error_code));
             close(pipefd[1]);
@@ -185,14 +185,18 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
                 response_body = getFileContent(getErrorPage(500, serverConfig));
                 if (response_body.empty())
                     response_body = "<html><body><h1>500 Internal Server Error</h1><p>Script execution timed out.</p></body></html>";
-                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body);
+                sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
                 request.setCode(500);
                 close(pipefd[0]);
                 return 500;
             }
             usleep(100000);
         }
-        read(pipefd[0], &response_code, sizeof(response_code));
+        if (read(pipefd[0], &response_code, sizeof(response_code)) <= 0) {
+            std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+            close(client_socket);
+            server.removeClient(client_socket, serverConfig.number);
+        }
         close(pipefd[0]);
 
         request.setCode(response_code);
@@ -230,7 +234,7 @@ int check_reps(std::string string){
 }
 
 // http://localhost:8002/cgi-bin/checker.php?filename=CV.pdf&exists=NO
-int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
+int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Server& server){
     const std::string url = serverConfig.root + request.getUrl();
     std::string new_url;
 
@@ -247,7 +251,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
                         std::string v1 = variables.substr(variables.find('=') + 1, variables.find('&') - variables.find('=') - 1);
                         std::string v2 = variables.substr(cgi_char(variables.c_str(), '=') + 1, variables.size());
                         if (v1.size() > 0 && v2.size() > 0){
-                            request.setCode(exc_script(request, serverConfig, client_socket, v1, v2));
+                            request.setCode(exc_script(request, serverConfig, client_socket, v1, v2, server));
                             return (request.getCode());
                         }
                     }
@@ -255,7 +259,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
                     std::string response_body = getFileContent(getErrorPage(400, serverConfig));
                     if (response_body.empty())
                         std::string response_body = "<html><body><h1>400 Bad Request</h1><p>No filename specified.</p></body></html>";
-                    sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body);
+                    sendHttpResponse(client_socket, "400 Bad Request", "text/html", response_body, server, serverConfig);
                     request.setCode(400);
                     return (400);
                 }
@@ -264,7 +268,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket){
     return -1;
 }
 
-int getResponse(Request request, int client_socket, const ServerConfig& serverConfig) {
+int getResponse(Request request, int client_socket, const ServerConfig& serverConfig, Server& server) {
     std::string filePath;
     struct stat fileStat;
     std::string url = request.getUrl();
@@ -283,7 +287,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
             "Content-Length: 0\r\n"
             "Connection: close\r\n"
             "\r\n";
-        send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
+        if (send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0) <= 0) {
+            std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+            server.removeClient(client_socket, serverConfig.number);
+        }
         request.setCode(301);
         close(client_socket);
         return 301;
@@ -295,7 +302,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         std::string response_body = getFileContent(getErrorPage(405, serverConfig));
         if (response_body.empty())
             response_body = "<html><body><h1>405 Method Not Allowed</h1><p>POST is not allowed in this ubication.</p></body></html>";
-        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body);
+        sendHttpResponse(client_socket, "405 Method Not Allowed", "text/html", response_body, server, serverConfig);
         request.setCode(405);
         close(client_socket);
         return (405);
@@ -314,7 +321,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Content-Length: 0\r\n"
                     "Connection: close\r\n"
                     "\r\n";
-                send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0);
+                if (send(client_socket, redirectResponse.c_str(), redirectResponse.size(), 0) <= 0) {
+                    std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                    server.removeClient(client_socket, serverConfig.number);
+                }
                 request.setCode(302);
                 close(client_socket);
                 return request.getCode();
@@ -372,7 +382,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(forbiddenPageContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + forbiddenPageContent;
-            send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0);
+            if (send(client_socket, forbiddenResponse.c_str(), forbiddenResponse.size(), 0) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+            }
             request.setCode(403);
         } else if (indexContent.empty() && autoindex_allowed(filePath, serverConfig)) {
             // Si no hay un archivo index.html pero el autoindex está habilitado, generar el autoindex
@@ -383,7 +396,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(autoIndexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + autoIndexContent;
-            send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0);
+            if (send(client_socket, autoIndexResponse.c_str(), autoIndexResponse.size(), 0) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+            }
             request.setCode(200);
         } else {
             // Si existe el index.html, devolverlo
@@ -393,7 +409,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(indexContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + indexContent;
-            send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
+            if (send(client_socket, httpResponse.c_str(), httpResponse.size(), 0) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+            }
             request.setCode(200);
         }
     } else {
@@ -401,14 +420,14 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         std::string fileContent = getFileContent(filePath);
         
         if (fileContent.empty()) {
-            int script = cgi(request, serverConfig, client_socket);
+            int script = cgi(request, serverConfig, client_socket, server);
             if (script != -1){
                 close (client_socket);
                 return (script);
             }
             if (fileExists(filePath)){
                 std::string contentType = getContentType(filePath);
-                sendHttpResponse(client_socket, "200 OK", contentType, "");
+                sendHttpResponse(client_socket, "200 OK", contentType, "", server, serverConfig);
                 close (client_socket);
                 request.setCode(200);
                 return (request.getCode());
@@ -426,7 +445,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Connection: close\r\n"
                     "\r\n" +
                     notFoundPageContent;
-                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+                if (send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0) <= 0) {
+                    std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                    server.removeClient(client_socket, serverConfig.number);
+                }
                 request.setCode(404);
             } else {
                 std::string notFoundResponse = 
@@ -435,7 +457,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                     "Content-Length: " + convertToString(notFoundPageContent.size()) + "\r\n"
                     "Connection: close\r\n"
                     "\r\n" + notFoundPageContent;
-                send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0);
+                if (send(client_socket, notFoundResponse.c_str(), notFoundResponse.size(), 0) <= 0) {
+                    std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                    server.removeClient(client_socket, serverConfig.number);
+                }
                 request.setCode(404);
             }
         } else {
@@ -446,7 +471,10 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 "Content-Length: " + convertToString(fileContent.size()) + "\r\n"
                 "Connection: close\r\n"
                 "\r\n" + fileContent;
-            send(client_socket, httpResponse.c_str(), httpResponse.size(), 0);
+            if (send(client_socket, httpResponse.c_str(), httpResponse.size(), 0) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+            }
             request.setCode(200);
         }
     }

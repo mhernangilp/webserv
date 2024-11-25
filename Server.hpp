@@ -29,13 +29,12 @@
 #define LIGHT_BLUE "\033[38;5;51m"
 
 class Server {
-    private:
+    public:
         std::vector<pollfd> main_poll_fds;
         std::vector<std::vector<Client> > clients;
         const std::vector<ServerConfig>& config;
         std::map<int, Request> pending_responses;
 
-    public:
         Server(const std::vector<ServerConfig>& config);
         ~Server();
 
@@ -46,7 +45,7 @@ class Server {
         int locateClientServer(int client_fd);
 };
 
-void method(Request request, int socket, const ServerConfig& serverConfig, int id);
-void body_limit(int client_socket, const ServerConfig& serverConfig, int id);
+void method(Request request, int socket, const ServerConfig& serverConfig, int id, Server& server);
+void body_limit(int client_socket, const ServerConfig& serverConfig, int id, Server& server);
 
 #endif

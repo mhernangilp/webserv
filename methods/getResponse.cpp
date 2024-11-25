@@ -144,7 +144,11 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
             int status = pclose(pipe);
             int return_code = (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? 200 : 500;
 
-            write(pipefd[1], &return_code, sizeof(return_code));
+            if (write(pipefd[1], &return_code, sizeof(return_code)) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+                exit(0);
+            }
             close(pipefd[1]);
 
             if (return_code == 500) {
@@ -163,7 +167,10 @@ int exc_script(Request request, const ServerConfig& serverConfig, int client_soc
                 response_body = "<html><body><h1>500 Internal Server Error</h1><p>Could not open pipe to execute script.</p></body></html>";
             sendHttpResponse(client_socket, "500 Internal Server Error", "text/html", response_body, server, serverConfig);
             
-            write(pipefd[1], &error_code, sizeof(error_code));
+            if (write(pipefd[1], &error_code, sizeof(error_code)) <= 0) {
+                std::cout << "[INFO] Client " << client_socket - server.config.size() - 2 << " Disconnected, Closing Connection ..." << std::endl;
+                server.removeClient(client_socket, serverConfig.number);
+            }
             close(pipefd[1]);
             exit(1);
         }

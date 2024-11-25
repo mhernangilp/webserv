@@ -1,7 +1,7 @@
 #include "method.hpp"
 #include "../Server.hpp"
 
-void method(Request request, int socket, const ServerConfig& serverConfig) {
+void method(Request request, int socket, const ServerConfig& serverConfig, int id) {
     if (request.getMethod() == "GET" || request.getMethod() == "DELETE" || request.getMethod() == "POST"){
         int code = 0;			
         if (request.getMethod() == "GET")
@@ -11,16 +11,16 @@ void method(Request request, int socket, const ServerConfig& serverConfig) {
         else if (request.getMethod() == "POST")
             code = postResponse(request, socket, serverConfig);
 
-        std::cout << BLUE << "[INFO] Response sent to client " << socket - 3 << ", Stats " << code << RESET << std::endl;
+        std::cout << BLUE << "[INFO] Response sent to client " << id << ", Stats " << code << RESET << std::endl;
     }
 }
 
-void body_limit(int client_socket, const ServerConfig& serverConfig){
+void body_limit(int client_socket, const ServerConfig& serverConfig, int id){
     std::string response_body = getFileContent(getErrorPage(413, serverConfig));
         if (response_body.empty())
             std::string response_body = "<html><body><h1>413 Payload Too Large</h1><p>Body size limit.</p></body></html>";
         sendHttpResponse(client_socket, "413 Payload Too Large", "text/html", response_body);
-        std::cout << BLUE << "[INFO] Response sent to client " << client_socket << ", Stats " << 413 << RESET << std::endl;
+        std::cout << BLUE << "[INFO] Response sent to client " << id << ", Stats " << 413 << RESET << std::endl;
         return ;
 }
 

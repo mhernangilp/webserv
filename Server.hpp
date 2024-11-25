@@ -12,6 +12,7 @@
 #include <cerrno>
 #include "Client.hpp"
 #include "config/ServerConfig.hpp"
+#include "methods/Request.hpp"
 #include <cstring>
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -32,6 +33,7 @@ class Server {
         std::vector<pollfd> main_poll_fds;
         std::vector<std::vector<Client> > clients;
         const std::vector<ServerConfig>& config;
+        std::map<int, Request> pending_responses;
 
     public:
         Server(const std::vector<ServerConfig>& config);
@@ -41,9 +43,10 @@ class Server {
         void processClientRequest(int client_fd, int server_number);
         void removeClient(int client_fd, int server_number);
         void max_body(int client_fd, int server_number);
+        int locateClientServer(int client_fd);
 };
 
-void method(Request request, int socket, const ServerConfig& serverConfig);
-void body_limit(int client_socket, const ServerConfig& serverConfig);
+void method(Request request, int socket, const ServerConfig& serverConfig, int id);
+void body_limit(int client_socket, const ServerConfig& serverConfig, int id);
 
 #endif

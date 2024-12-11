@@ -433,6 +433,21 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
                 return (script);
             }
             if (fileExists(filePath)){
+                std::ifstream file_check(filePath.c_str());
+                if (!file_check.is_open()) {
+                    std::string notFoundPagePath = getErrorPage(404, serverConfig);
+                    std::string body = getFileContent(notFoundPagePath);
+
+                    if (body.empty()) {
+                        body = "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
+                    }
+                    sendHttpResponse(client_socket, "404 Not Found", "text/html", body, server, serverConfig);
+                    request.setCode(404);
+                    close(client_socket);
+                    return (request.getCode()); 
+                }
+                
+                file_check.close();
                 std::string contentType = getContentType(filePath);
                 sendHttpResponse(client_socket, "200 OK", contentType, "", server, serverConfig);
                 close (client_socket);

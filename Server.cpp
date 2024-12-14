@@ -205,11 +205,11 @@ void Server::processClientRequest(int client_fd, int server_number) {
 
     Request request(accumulated_request);
     request.setServer(server_number);
-    clients[server_number][client_fd - config.size() - 3].setRequest(request);
+    //clients[server_number][client_fd - config.size() - 3].setRequest(request);
 
     std::cout << BLUE << "[INFO] Message received from client " << client_fd - config.size() - 2 << ", Method = <" << request.getMethod() << ">  URL = <" << request.getUrl() << ">" << RESET << std::endl;
 
-    pending_responses[client_fd] = clients[server_number][client_fd - config.size() - 3].getRequest();
+    pending_responses[client_fd] = request;
 
     for (size_t i = 0; i < main_poll_fds.size(); i++) {
         if (main_poll_fds[i].fd == client_fd) {
@@ -220,29 +220,39 @@ void Server::processClientRequest(int client_fd, int server_number) {
     return ;
 }
 
-
 void Server::removeClient(int client_fd, int server_number) {
-    int changed = 0;
+    // Eliminar cliente de pending_responses
+    pending_responses.erase(client_fd);
+    
+    // Continuar con la eliminación del cliente de main_poll_fds y clients
+    bool found_in_main_poll = false;
+    bool found_in_clients = false;
 
-	for (size_t i = 0; i < main_poll_fds.size(); i++) {
+    for (size_t i = 0; i < main_poll_fds.size(); i++) {
         if (main_poll_fds[i].fd == client_fd) {
             main_poll_fds.erase(main_poll_fds.begin() + i);
-            changed++;
+            found_in_main_poll = true;
             break;
         }
     }
+
     for (size_t i = 0; i < clients[server_number].size(); i++) {
         if (clients[server_number][i].getIndex() == client_fd) {
             clients[server_number].erase(clients[server_number].begin() + i);
-            changed++;
+            found_in_clients = true;
             break;
         }
     }
-    if (changed != 2) {
-        std::cerr << "[ERR] Error on client deletion" << std::endl;
-        exit(EXIT_FAILURE);
+
+    if (!found_in_main_poll || !found_in_clients) {
+        std::cerr << "[ERR] Error on client deletion: ";
+        if (!found_in_main_poll) std::cerr << "client not found in main_poll_fds. ";
+        if (!found_in_clients) std::cerr << "client not found in clients[server_number].";
+        std::cerr << std::endl;
+        return; // Maneja el error en lugar de cerrar el programa
     }
 }
+
 
 void Server::max_body(int client_fd, int server_number){
     body_limit(client_fd, config[server_number], client_fd - config.size() - 2, *this);

@@ -6,9 +6,9 @@
 #include <string>
 #include <cstring>
 
-Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0), server(0) {}
+Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0), server(0), valid(true) {}
 
-Request::Request(const std::string& raw_request) {
+Request::Request(const std::string raw_request) : valid(true) {
     parseRequest(raw_request);
 }
 
@@ -17,8 +17,12 @@ Request::Request(const Request& other)
       url(other.url),
       http_version(other.http_version),
       host(other.host),
+      headers(other.headers),
       body(other.body),
-      file_name(other.file_name)
+      file_name(other.file_name),
+      code(0),
+      server(0),
+      valid(true)
 {}
 
 
@@ -28,14 +32,18 @@ Request& Request::operator=(const Request& other) {
         this->url = other.url;
         this->http_version = other.http_version;
         this->host = other.host;
+        this->headers = other.headers;
         this->body = other.body;
         this->file_name = other.file_name;
+        this->code = 0;
+        this->server = 0;
+        this->valid = true;
     }
     return *this;
 }
 
 
-void Request::parseRequest(const std::string& raw_request) {
+void Request::parseRequest(const std::string raw_request) {
     std::istringstream stream(raw_request);
     std::string line;
 
@@ -125,3 +133,4 @@ void Request::setCode(int code) { this->code = code; }
 int Request::getServer() { return server; }
 void Request::setServer(int server) { this->server = server; }
 void Request::setUrl(std::string url) { this->url = url; }
+bool Request::isValid() const { return valid; }

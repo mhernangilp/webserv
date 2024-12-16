@@ -32,7 +32,8 @@ int try_delete(std::string url, int client_socket, Request request, const Server
 int deleteResponse(Request request, int client_socket, const ServerConfig& serverConfig, Server& server) {
     const std::string& url = request.getUrl();
     std::string newUrl = url;
-    if (access(url.c_str(), F_OK) == -1)
+    std::string aux = serverConfig.root + url;
+    if (access(aux.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
 
     if (!serverConfig.isMethodAllowed(newUrl, 'D') || urlRecoil(request.getUrl())) {

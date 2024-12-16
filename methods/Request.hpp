@@ -21,10 +21,11 @@ class Request {
         std::string file_name;
         int code;
         int server;
+        bool valid;
 
     public:
     Request();
-        Request(const std::string& raw_request);
+        Request(const std::string raw_request);
         Request(const Request& other);
         Request& operator=(const Request& other);
 
@@ -40,9 +41,10 @@ class Request {
         int getServer();
         void setServer(int code);
         void setUrl(std::string url);
+        bool isValid() const;
 
     private:
-        void parseRequest(const std::string& raw_request);
+        void parseRequest(const std::string raw_request);
 };
 
 #endif

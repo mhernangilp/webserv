@@ -10,6 +10,10 @@ Request Client::getRequest() const {
 
 // Setter para request (recibe un objeto Request)
 void Client::setRequest(const Request& new_request) {
+    if (new_request.isValid() == false) {
+        std::cerr << "Error. Request is null" << std::endl;
+        return;
+    }
     request = new_request;
 }
 
@@ -24,6 +28,6 @@ int Client::getIndex() {
 void Client::setLastReadTime(time_t time) {
     lastReadTime = time;
 }
-long int Client::getLastReadTime() {
+time_t Client::getLastReadTime() {
     return lastReadTime;
 }

@@ -275,6 +275,11 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
     return -1;
 }
 
+bool isCgi(std::string filePath) {
+    std::cout << "CGI " << filePath << std::endl;
+    return false;
+}
+
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig, Server& server) {
     std::string filePath;
     struct stat fileStat;
@@ -427,12 +432,15 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         // Si no es un directorio, intentar devolver el archivo solicitado
         std::string fileContent = getFileContent(filePath);
         
-        if (fileContent.empty()) {
+        if (isCgi(filePath)) {
             int script = cgi(request, serverConfig, client_socket, server);
             if (script != -1){
                 close (client_socket);
                 return (script);
             }
+        }
+
+        if (fileContent.empty()) {
             if (fileExists(filePath)){
                 std::ifstream file_check(filePath.c_str());
                 if (!file_check.is_open()) {

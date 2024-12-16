@@ -46,10 +46,8 @@ void ServerConfig::struct_method_allowed() {
         const std::vector<std::string>& allowed_methods = it->second.allow_methods;
 
         std::string methods_str;
-        if (allowed_methods.size() == 0){
+        if (allowed_methods.size() == 0)
             methods_str += 'E';
-            std::cout << "No methods allowed for location: " << it->first << std::endl;
-        }
         for (size_t j = 0; j < allowed_methods.size(); ++j) {
             if (allowed_methods[j] == "GET") {
                 methods_str += 'G';
@@ -120,10 +118,9 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
 
     for (int i = 0; method_location[i] != NULL; ++i) {
 
-        int dir = findCharFromEnd(location, '/');
-        std::string dir_location = location.substr(0, dir);
+        std::string dir_location = location;
         if (dir_location.size() == 0)
-            dir_location = "/";
+                dir_location = "/";
 
         while (dir_location.size() > 0){
             if (strcmp(method_location[i], dir_location.c_str()) == 0) {
@@ -136,16 +133,15 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
                     for (int i = 0; method_location[i] != NULL; ++i) {
                         if (strcmp(method_location[i], "/") == 0){
                             std::string met = methods[i];
-                            if (met.find(m) != std::string::npos) {
+                            if (met.find(m) != std::string::npos)
                                 return true;
-                            }
                             else
                                 return false;
                         }
                     }
                 }
             }
-            dir = findCharFromEnd(dir_location, '/');
+            int dir = findCharFromEnd(dir_location, '/');
             dir_location = location.substr(0, dir);
         }
 

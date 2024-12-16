@@ -303,7 +303,8 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         return 301;
     }
     
-    if (access(url.c_str(), F_OK) == -1)
+    std::string aux = serverConfig.root + url;
+    if (access(aux.c_str(), F_OK) == -1)
         newUrl = urlDecode(url);
     if (!serverConfig.isMethodAllowed(newUrl, 'G') || urlRecoil(request.getUrl())) {
         std::string response_body = getFileContent(getErrorPage(405, serverConfig));

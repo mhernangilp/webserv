@@ -172,7 +172,6 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         return (cgi_function(request, serverConfig, client_socket, name, server));
 
     std::string full_path = serverConfig.root + request.getFileRoute() + "/" + name;
-    std::cout << "Saving file to: " << full_path << std::endl;
     std::string base_name = name;
     std::string extension = "";
     // Separar el nombre base y la extensión si tiene.
@@ -186,7 +185,6 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         std::ostringstream new_filename;
         new_filename << base_name << "(" << file_index << ")" << extension;
         full_path = serverConfig.root + request.getFileRoute() + "/" + new_filename.str();
-        std::cout << "File already exists. Trying: " << full_path << std::endl;
         file_index++;
     }
 

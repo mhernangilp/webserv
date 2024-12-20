@@ -110,7 +110,6 @@ void Request::parseRequest(const std::string raw_request) {
                 file_route = file_route.substr(1);
             if (file_route[file_route.size() - 1] == '/')
                 file_route = file_route.substr(0, file_route.size() - 1);
-            std::cout << "Route: " << file_route << std::endl;
         } else {
             std::cerr << "Route field not found!" << std::endl;
             code = 402;

@@ -7,7 +7,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
     std::string response_body;
     std::string exists = "NO";
     
-    if (fileExists(serverConfig.root + "/fake-gallery/" + name)) 
+    if (fileExists(serverConfig.root + request.getFileRoute() + '/' + name)) 
         exists = "YES";
     
     std::string command = "php " + script_path + " \"" + name + "\" " + exists;
@@ -171,7 +171,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     if (request.getUrl() == "/cgi-bin/checker.php")
         return (cgi_function(request, serverConfig, client_socket, name, server));
 
-    std::string full_path = serverConfig.root + "fake-gallery/" + name;
+    std::string full_path = serverConfig.root + request.getFileRoute() + "/" + name;
     std::string base_name = name;
     std::string extension = "";
     // Separar el nombre base y la extensión si tiene.
@@ -184,7 +184,7 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
     while (fileExists(full_path)) {
         std::ostringstream new_filename;
         new_filename << base_name << "(" << file_index << ")" << extension;
-        full_path = serverConfig.root + "fake-gallery/" + new_filename.str();
+        full_path = serverConfig.root + request.getFileRoute() + "/" + new_filename.str();
         file_index++;
     }
 

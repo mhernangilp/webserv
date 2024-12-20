@@ -127,6 +127,8 @@
             <form action="/upload/upload_done.html" method="post" enctype="multipart/form-data">
                 <label for="file">Choose a file to upload:</label>
                 <input type="file" id="file" name="file" required>
+                <label for="route">Upload Route:</label>
+                <input type="text" id="route" name="route" value="/fake-gallery" required>
                 <input type="submit" value="Upload File">
             </form>
         </div>
@@ -136,6 +138,8 @@
             <form action="/cgi-bin/checker.php" method="post" enctype="multipart/form-data">
                 <label for="checker">Choose a file to check if it exists:</label>
                 <input type="file" id="checker" name="checker" required>
+                <label for="route">Checker Route:</label>
+                <input type="text" id="route" name="route" value="/fake-gallery" required>
                 <input type="submit" value="Check File">
             </form>
         </div>

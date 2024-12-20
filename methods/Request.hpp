@@ -19,6 +19,7 @@ class Request {
         std::map<std::string, std::string> headers;
         std::string body;
         std::string file_name;
+        std::string file_route;
         int code;
         int server;
         bool valid;
@@ -36,6 +37,7 @@ class Request {
         std::map<std::string, std::string> getHeaders() const;
         std::string getBody() const;
         std::string getFileName() const;
+        std::string getFileRoute() const;
         int getCode();
         void setCode(int code);
         int getServer();

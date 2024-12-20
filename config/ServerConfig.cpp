@@ -1,6 +1,8 @@
 #include "ServerConfig.hpp"
 #include <cstring>
 #include <sys/stat.h>
+#include <iostream>
+#include <unistd.h>
 
 ServerConfig::ServerConfig() : port(8002), host("127.0.0.1"), server_name("localhost"), client_max_body_size(1024), index("index.html"), root("docs/kebab_web/") {
     LocationConfig location = LocationConfig();
@@ -121,6 +123,8 @@ bool ServerConfig::isMethodAllowed(const std::string& location, char m) const{
         std::string dir_location = location;
         if (dir_location.size() == 0)
                 dir_location = "/";
+        else if (access((root + location).c_str(), F_OK) == 0 && findCharFromEnd(dir_location, '/') == 0)
+            dir_location = "/";
 
         while (dir_location.size() > 0){
             if (strcmp(method_location[i], dir_location.c_str()) == 0) {

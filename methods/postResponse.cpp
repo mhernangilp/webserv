@@ -3,7 +3,10 @@
 #include <cstdlib>
 
 int cgi_function(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, Server& server) {
-    std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
+    std::string aux_url = request.getUrl();
+    if (serverConfig.root[serverConfig.root.length() - 1] == '/' && aux_url[0] == '/')
+        aux_url = aux_url.substr(1);
+    std::string script_path = serverConfig.root + aux_url;   
     std::string response_body;
     std::string exists = "NO";
     
@@ -168,7 +171,8 @@ int postResponse(Request request, int client_socket, const ServerConfig& serverC
         return (415);
     }
 
-    if (request.getUrl() == "/cgi-bin/checker.php")
+    const std::string aux_url = request.getUrl();
+    if (aux_url.size() >= 4 && aux_url.substr(aux_url.size() - 4) == ".php")
         return (cgi_function(request, serverConfig, client_socket, name, server));
 
     std::string full_path = serverConfig.root + request.getFileRoute() + "/" + name;

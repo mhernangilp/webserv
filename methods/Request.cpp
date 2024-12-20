@@ -6,7 +6,7 @@
 #include <string>
 #include <cstring>
 
-Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), code(0), server(0), valid(true) {}
+Request::Request() : method(""), url(""), http_version(""), host(""), headers(), body(""), file_name(""), file_route(""), code(0), server(0), valid(true) {}
 
 Request::Request(const std::string raw_request) : valid(true) {
     parseRequest(raw_request);
@@ -20,6 +20,7 @@ Request::Request(const Request& other)
       headers(other.headers),
       body(other.body),
       file_name(other.file_name),
+      file_route(other.file_route),
       code(0),
       server(0),
       valid(true)
@@ -35,6 +36,7 @@ Request& Request::operator=(const Request& other) {
         this->headers = other.headers;
         this->body = other.body;
         this->file_name = other.file_name;
+        this->file_route = other.file_route;
         this->code = 0;
         this->server = 0;
         this->valid = true;
@@ -46,7 +48,7 @@ Request& Request::operator=(const Request& other) {
 void Request::parseRequest(const std::string raw_request) {
     std::istringstream stream(raw_request);
     std::string line;
-
+std::cout << "Request: " << raw_request << std::endl;
     code = 0;
     // Leer la línea de la solicitud
     std::getline(stream, line);
@@ -106,9 +108,39 @@ void Request::parseRequest(const std::string raw_request) {
                         code = 400;
                     }
                 } else {
-                    std::cerr << "Header end not found or invalid range!" << std::endl;
+                    std::cerr << "Header end not found or invalid range for file part!" << std::endl;
                     code = 401;
                 }
+                if (nextBoundaryPos != std::string::npos) {
+                    std::size_t routePartStart = filePartEnd;
+                    std::size_t routeHeaderEnd = (routePartStart != std::string::npos) ? routePartStart : body.length();
+
+                    if (routeHeaderEnd != std::string::npos) {
+std::cout << "Route part start: " << routePartStart << " " << routeHeaderEnd << std::endl;
+                        std::string routeHeader = body.substr(routePartStart, routeHeaderEnd - routePartStart);
+                        std::cout << "Route header: " << routeHeader << std::endl;
+                        std::string routeBody = body.substr(routeHeaderEnd + 4, routeHeaderEnd - (routeHeaderEnd + 4));
+                        std::cout << "Route body: " << routeBody << std::endl;
+
+                        // Verificar si la parte es el campo route
+                        if (routeHeader.find("name=\"route\"") != std::string::npos) {
+                            this->file_route = routeBody;
+                            this->file_route.erase(this->file_route.find_last_not_of("\r\n") + 1); // Limpiar saltos de línea
+                            std::cout << "Route: " << this->file_route << std::endl;
+                        } else {
+                            std::cerr << "Route part not found!" << std::endl;
+                            code = 402;
+                        }
+                    } else {
+                        std::cerr << "Route header end not found or invalid range!" << std::endl;
+                        code = 403;
+                    }
+                } else {
+                    std::cerr << "No second boundary found!" << std::endl;
+                    code = 404;
+                }
+
+
             } else {
                 std::cerr << "Boundary not found in the body!" << std::endl;
                 code = 415;
@@ -129,6 +161,7 @@ std::map<std::string, std::string> Request::getHeaders() const { return headers;
 std::string Request::getBody() const { return body; }
 std::string Request::getFileName() const { return file_name; }
 int Request::getCode() { return code; }
+std::string Request::getFileRoute() const { return file_route; }
 void Request::setCode(int code) { this->code = code; }
 int Request::getServer() { return server; }
 void Request::setServer(int server) { this->server = server; }

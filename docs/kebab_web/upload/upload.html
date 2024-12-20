@@ -138,6 +138,8 @@
             <form action="/cgi-bin/checker.php" method="post" enctype="multipart/form-data">
                 <label for="checker">Choose a file to check if it exists:</label>
                 <input type="file" id="checker" name="checker" required>
+                <label for="route">Checker Route:</label>
+                <input type="text" id="route" name="route" value="/fake-gallery" required>
                 <input type="submit" value="Check File">
             </form>
         </div>

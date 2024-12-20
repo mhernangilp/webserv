@@ -7,7 +7,7 @@ int cgi_function(Request request, const ServerConfig& serverConfig, int client_s
     std::string response_body;
     std::string exists = "NO";
     
-    if (fileExists(serverConfig.root + "/fake-gallery/" + name)) 
+    if (fileExists(serverConfig.root + request.getFileRoute() + '/' + name)) 
         exists = "YES";
     
     std::string command = "php " + script_path + " \"" + name + "\" " + exists;

@@ -98,8 +98,7 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
-int exc_script(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists, Server& server) {
-    std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
+int exc_script(std::string script_path, Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists, Server& server) {
     std::string response_body;
     std::string command = "php " + script_path + " " + name + " " + exists;
 
@@ -258,7 +257,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
                         std::string v1 = variables.substr(variables.find('=') + 1, variables.find('&') - variables.find('=') - 1);
                         std::string v2 = variables.substr(cgi_char(variables.c_str(), '=') + 1, variables.size());
                         if (v1.size() > 0 && v2.size() > 0){
-                            request.setCode(exc_script(request, serverConfig, client_socket, v1, v2, server));
+                            request.setCode(exc_script(new_url, request, serverConfig, client_socket, v1, v2, server));
                             return (request.getCode());
                         }
                     }
@@ -271,6 +270,10 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
                     return (400);
                 }
             }
+    }
+    else {
+        request.setCode(exc_script(url, request, serverConfig, client_socket, " ", " ", server));
+        return (request.getCode());
     }
     return -1;
 }

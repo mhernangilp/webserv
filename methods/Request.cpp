@@ -114,7 +114,7 @@ void Request::parseRequest(const std::string raw_request) {
             std::cerr << "Route field not found!" << std::endl;
             code = 402;
         }
-        boundaryMarker = "------WebKitFormBoundary";
+
         boundaryPos = body.find(boundaryMarker);
 
         if (boundaryPos != std::string::npos) {

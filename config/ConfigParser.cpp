@@ -174,7 +174,7 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             }
         }
     } else if (current_block == "location") {
-        if (key != "root" && key != "autoindex" && key != "allow_methods" && key != "index" && key != "return") {
+        if (key != "root" && key != "autoindex" && key != "allow_methods" && key != "index" && key != "return" && key != "cgi_ext") {
             std::cerr << RED << "[ERR] config not valid ";
             return 1;
         }
@@ -220,6 +220,16 @@ int ConfigParser::parseKey(const std::string& key, std::istringstream& iss) {
             iss >> temp_return_path;
             if (!temp_return_path.empty()) {
                 current_location.return_path = normalizeUrl(temp_return_path.substr(0, temp_return_path.size() - 1));
+            }
+        } else if (key == "cgi_ext") {
+            std::string temp_cgi_ext;
+            iss >> temp_cgi_ext;
+            if (!temp_cgi_ext.empty() && temp_cgi_ext[temp_cgi_ext.length() - 1] != ';') {
+                std::cerr << RED << "[ERR] cgi extension can't have spaces ";
+                return 1;
+            }
+            if (!temp_cgi_ext.empty()) {
+                current_location.cgi_ext = normalizeUrl(temp_cgi_ext.substr(0, temp_cgi_ext.size() - 1));
             }
         }
     }

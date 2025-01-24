@@ -11,4 +11,5 @@ void LocationConfig::print() const {
     }
     std::cout << "\n\tIndex: " << index << "\n";
     std::cout << "\tReturn Path: " << return_path << "\n";
+    std::cout << "\tCgi extension: " << cgi_ext << "\n";
 }

@@ -278,8 +278,23 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
     return -1;
 }
 
-bool isCgi(std::string filePath) {
-    std::cout << "CGI " << filePath << std::endl;
+bool isCgi(std::string filePath, const ServerConfig& serverConfig) {
+    filePath = filePath.substr(serverConfig.root.length() - 1, filePath.length() - serverConfig.root.length() + 1);
+    size_t lastSlashPos = filePath.rfind('/');
+    std::string path = filePath.substr(0, lastSlashPos);
+    if (path == "/.")
+        path = ".";
+    size_t extensionPos = filePath.rfind('.');
+    if (extensionPos == std::string::npos)
+        return false;
+    std::string fileExt = filePath.substr(extensionPos, filePath.length() - extensionPos);
+    for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+        if (it->first == path || it->second.root == path) {
+            if (fileExt == it->second.cgi_ext) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -435,7 +450,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         // Si no es un directorio, intentar devolver el archivo solicitado
         std::string fileContent = getFileContent(filePath);
         
-        if (isCgi(filePath)) {
+        if (isCgi(filePath, serverConfig)) {
             int script = cgi(request, serverConfig, client_socket, server);
             if (script != -1){
                 close (client_socket);

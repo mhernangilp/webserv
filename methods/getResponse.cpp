@@ -242,13 +242,13 @@ int check_reps(std::string string){
 // http://localhost:8002/cgi-bin/checker.php?filename=CV.pdf&exists=NO
 int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Server& server){
     std::string decode_url = request.getUrl();
-    if (decode_url[0] == '/')
+    if (decode_url[0] == '/' && serverConfig.root[serverConfig.root.size() - 1] == '/')
         decode_url = decode_url.substr(1, decode_url.size());
     const std::string url = serverConfig.root + decode_url;
     std::string new_url;
 
     size_t pos = url.find('?');
-    if (pos != std::string::npos){
+    if (!fileExists(url) && pos != std::string::npos){
         new_url = url.substr(0, pos);
             if (fileExists(new_url)){
                 int i = cgi_char(new_url.c_str(), '/');
@@ -282,6 +282,10 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
 }
 
 bool isCgi(std::string filePath, const ServerConfig& serverConfig) {
+    if (!fileExists(filePath) && filePath.find("?") != std::string::npos) {
+        std::string newUrl = filePath.substr(0, filePath.find("?"));
+        filePath = newUrl;
+    }
     filePath = filePath.substr(serverConfig.root.length() - 1, filePath.length() - serverConfig.root.length() + 1);
     size_t lastSlashPos = filePath.rfind('/');
     std::string path = filePath.substr(0, lastSlashPos);

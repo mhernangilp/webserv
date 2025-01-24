@@ -48,7 +48,6 @@ void ServerConfig::struct_method_allowed() {
         std::string methods_str;
         if (allowed_methods.size() == 0){
             methods_str += 'E';
-            std::cout << "No methods allowed for location: " << it->first << std::endl;
         }
         for (size_t j = 0; j < allowed_methods.size(); ++j) {
             if (allowed_methods[j] == "GET") {

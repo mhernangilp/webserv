@@ -1,4 +1,4 @@
-?php
+<?php
 // Establecer la zona horaria
 date_default_timezone_set('Europe/Madrid'); // Cambia esto según tu zona horaria
 

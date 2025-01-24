@@ -241,7 +241,10 @@ int check_reps(std::string string){
 
 // http://localhost:8002/cgi-bin/checker.php?filename=CV.pdf&exists=NO
 int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Server& server){
-    const std::string url = serverConfig.root + request.getUrl();
+    std::string decode_url = request.getUrl();
+    if (decode_url[0] == '/')
+        decode_url = decode_url.substr(1, decode_url.size());
+    const std::string url = serverConfig.root + decode_url;
     std::string new_url;
 
     size_t pos = url.find('?');

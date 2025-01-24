@@ -16,6 +16,7 @@ public:
     std::vector<std::string> allow_methods;
     std::string index;
     std::string return_path;
+    std::string cgi_ext;
 
     LocationConfig();
 

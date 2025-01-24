@@ -98,8 +98,7 @@ bool autoindex_allowed(std::string path, const ServerConfig& serverConfig) {
     return false;
 }
 
-int exc_script(Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists, Server& server) {
-    std::string script_path = serverConfig.root + "/cgi-bin/checker.php";
+int exc_script(std::string script_path, Request request, const ServerConfig& serverConfig, int client_socket, std::string name, std::string exists, Server& server) {
     std::string response_body;
     std::string command = "php " + script_path + " " + name + " " + exists;
 
@@ -242,7 +241,10 @@ int check_reps(std::string string){
 
 // http://localhost:8002/cgi-bin/checker.php?filename=CV.pdf&exists=NO
 int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Server& server){
-    const std::string url = serverConfig.root + request.getUrl();
+    std::string decode_url = request.getUrl();
+    if (decode_url[0] == '/')
+        decode_url = decode_url.substr(1, decode_url.size());
+    const std::string url = serverConfig.root + decode_url;
     std::string new_url;
 
     size_t pos = url.find('?');
@@ -258,7 +260,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
                         std::string v1 = variables.substr(variables.find('=') + 1, variables.find('&') - variables.find('=') - 1);
                         std::string v2 = variables.substr(cgi_char(variables.c_str(), '=') + 1, variables.size());
                         if (v1.size() > 0 && v2.size() > 0){
-                            request.setCode(exc_script(request, serverConfig, client_socket, v1, v2, server));
+                            request.setCode(exc_script(new_url, request, serverConfig, client_socket, v1, v2, server));
                             return (request.getCode());
                         }
                     }
@@ -272,7 +274,31 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
                 }
             }
     }
+    else {
+        request.setCode(exc_script(url, request, serverConfig, client_socket, " ", " ", server));
+        return (request.getCode());
+    }
     return -1;
+}
+
+bool isCgi(std::string filePath, const ServerConfig& serverConfig) {
+    filePath = filePath.substr(serverConfig.root.length() - 1, filePath.length() - serverConfig.root.length() + 1);
+    size_t lastSlashPos = filePath.rfind('/');
+    std::string path = filePath.substr(0, lastSlashPos);
+    if (path == "/.")
+        path = ".";
+    size_t extensionPos = filePath.rfind('.');
+    if (extensionPos == std::string::npos)
+        return false;
+    std::string fileExt = filePath.substr(extensionPos, filePath.length() - extensionPos);
+    for (std::map<std::string, LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+        if (it->first == path || it->second.root == path) {
+            if (fileExt == it->second.cgi_ext) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 int getResponse(Request request, int client_socket, const ServerConfig& serverConfig, Server& server) {
@@ -427,12 +453,15 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         // Si no es un directorio, intentar devolver el archivo solicitado
         std::string fileContent = getFileContent(filePath);
         
-        if (fileContent.empty()) {
+        if (isCgi(filePath, serverConfig)) {
             int script = cgi(request, serverConfig, client_socket, server);
             if (script != -1){
                 close (client_socket);
                 return (script);
             }
+        }
+
+        if (fileContent.empty()) {
             if (fileExists(filePath)){
                 std::ifstream file_check(filePath.c_str());
                 if (!file_check.is_open()) {

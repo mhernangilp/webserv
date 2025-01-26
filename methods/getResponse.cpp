@@ -244,7 +244,7 @@ int cgi(Request request, const ServerConfig& serverConfig, int client_socket, Se
     std::string decode_url = request.getUrl();
     if (decode_url[0] == '/' && serverConfig.root[serverConfig.root.size() - 1] == '/')
         decode_url = decode_url.substr(1, decode_url.size());
-    const std::string url = serverConfig.root + decode_url;
+    const std::string url = decode_url;
     std::string new_url;
 
     size_t pos = url.find('?');
@@ -458,6 +458,7 @@ int getResponse(Request request, int client_socket, const ServerConfig& serverCo
         std::string fileContent = getFileContent(filePath);
         
         if (isCgi(filePath, serverConfig)) {
+            request.setUrl(filePath);
             int script = cgi(request, serverConfig, client_socket, server);
             if (script != -1){
                 close (client_socket);

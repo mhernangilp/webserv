@@ -33,7 +33,7 @@ std::string generateAutoIndexPage(const std::string& dirPath, const std::string&
 
     if ((dir = opendir(dirPath.c_str())) != NULL) {
         // Añadir el enlace para subir al directorio anterior
-        html << "<a href=\"../\">../</a>\n";
+        html << "<a href=\"" << urlPath << "/.." << "\">../</a>\n";
 
         // Iterar sobre los archivos y directorios en el directorio actual
         while ((ent = readdir(dir)) != NULL) {

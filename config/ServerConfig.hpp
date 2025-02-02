@@ -19,7 +19,6 @@ public:
 
     ServerConfig();
 
-    void print() const;
     void addLocation(const std::string& path, const LocationConfig& location);
     bool isMethodAllowed(const std::string& location, char m) const;
     void struct_method_allowed();

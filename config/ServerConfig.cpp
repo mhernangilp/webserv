@@ -12,25 +12,6 @@ ServerConfig::ServerConfig() : port(8002), host("127.0.0.1"), server_name("local
     this->addLocation(location.location, location);
 }
 
-void ServerConfig::print() const {
-    std::cout << "--Server Config:\n";
-    std::cout << "\tport: " << port << "\n";
-    std::cout << "\tHost: " << host << "\n";
-    std::cout << "\tServer Name: " << server_name << "\n";
-    std::cout << "\tError Page:\n";
-    for (std::map<int, std::string>::const_iterator it = error_page.begin(); it != error_page.end(); ++it) {
-        std::cout << "\t\tError type: " << it->first << ", error path: " << it->second << std::endl;
-    }
-    std::cout << "\tMax Body Size: " << client_max_body_size << " bytes\n";
-    std::cout << "\tRoot: " << root << "\n";
-    std::cout << "\tIndex: " << index << "\n";
-    std::cout << "\n--Locations:\n";
-    for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-        std::cout << "Location: '" << it->first << "'\n";
-        it->second.print();
-    }
-}
-
 void ServerConfig::addLocation(const std::string& path, const LocationConfig& location) {
     locations[path] = location;
 }

@@ -19,8 +19,6 @@ public:
     std::string cgi_ext;
 
     LocationConfig();
-
-    void print() const;
 };
 
 #endif

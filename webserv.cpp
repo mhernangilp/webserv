@@ -19,12 +19,8 @@ int main(int argc, char **argv)
 	if (parser.parseConfig(config_file) == 1)
 		return 2; 
 	std::vector<ServerConfig>& config = parser.getServerConfig();
-	for (size_t i = 0; i < config.size(); i++) {
+	for (size_t i = 0; i < config.size(); i++)
 		config[i].number = i;
-		
-		std::cout << LIGHT_BLUE << "SERVER " << config[i].number << ":" << RESET << std::endl;
-		config[i].print();
-	}
 	Server server(config);
 	for (size_t i = 0; i < config.size(); i++) {
 		config[i].struct_method_allowed();

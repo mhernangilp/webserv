@@ -106,7 +106,7 @@ void Request::parseRequest(const std::string raw_request) {
             routeContent.erase(routeContent.find_last_not_of("\r\n") + 1);
             file_route = routeContent;
             file_route = file_route.substr(0, file_route.find("\r\n"));
-            if (file_route[0] == '/')
+            if (file_route[0] == '/' && file_route[1])
                 file_route = file_route.substr(1);
             if (file_route[file_route.size() - 1] == '/')
                 file_route = file_route.substr(0, file_route.size() - 1);

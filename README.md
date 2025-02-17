@@ -14,7 +14,11 @@
 	<a href="#-testing">Testing</a>
 </h3>
 
----
+---)
+
+<p align="center">
+	<img width="600" alt="screenshot" src="https://github.com/user-attachments/assets/25d7d71e-7a38-497f-b0bd-fb020c3104a4">
+</p>
 
 ## 💡 About the project
 
